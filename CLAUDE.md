@@ -162,8 +162,10 @@ Flujo: `main` protegida, una rama corta por feature, PR con squash merge, borrar
 - [ ] `commitlint` en CI también.
 - [ ] `.github/dependabot.yml` semanal.
 - [ ] `.github/pull_request_template.md`.
-- [ ] Vercel preview deploys en cada PR.
-- [ ] Badges en README: CI, Vercel, Node version.
+- [ ] Railway preview environments en cada PR.
+- [ ] `railway.json` o `nixpacks.toml` versionado.
+- [ ] Secret `RAILWAY_TOKEN` configurado en GitHub para deploy.
+- [ ] Badges en README: CI, Railway deploy, Node version.
 
 ### README
 
@@ -193,5 +195,5 @@ Specs planificadas:
 07-traceability.md          DecisionLog, qué se loguea y cómo se consulta
 08-api-and-ui.md            rutas Next, server actions, páginas
 09-testing-strategy.md      unitarios, e2e, fixtures, mocks de OpenAI
-10-ci-cd.md                 workflows, secrets, Vercel preview, deploy
+10-ci-cd.md                 workflows, secrets, Railway preview, deploy
 ```

@@ -8,18 +8,32 @@ Procesar ofertas de proveedor en PDF/XLSX y conciliarlas contra solicitudes de c
 
 - **TypeScript** estricto.
 - **Next.js 15** App Router. UI + API + server actions en un solo deploy.
-- **Prisma + MySQL 8**. Dockerizado en dev, Neon o Railway en prod.
+- **Prisma + MySQL 8**. Dockerizado en dev, Railway managed MySQL en prod.
 - **Zod** para schemas de I/O, output del LLM y env vars.
 - **OpenAI**: `gpt-4o-mini` para extracción y judge, `text-embedding-3-small` para shortlist.
 - **pdf-parse** para PDFs simples, PDF nativo al modelo cuando el layout rompe el texto plano.
 - **xlsx** (sheetjs) para Excel.
-- **Tailwind + shadcn/ui**.
+- **Tailwind** + componentes custom (sin shadcn, ver `ui-style.md`).
+- **Inter** como fuente única.
 - **Vitest** para tests.
 - **pino** para logs.
-- **Vercel** deploy (confirmado por recruiter).
-- **GitHub Actions** CI.
+- **Railway unified** deploy (app + MySQL en mismo proyecto). Recruiter pidió Vercel como preferencia pero aceptó alternativas; Railway elimina cold starts, timeouts serverless y mantiene todo en una sola plataforma.
+- **GitHub Actions** CI con deploy a Railway via `railway up`.
 
-Sin Nest. Sin Tanstack Query (server actions cubren). Sin DDD pesado.
+Sin Nest. Sin Tanstack Query (server actions cubren). Sin DDD pesado. Sin Vercel.
+
+## Deploy
+
+Railway unified. Un proyecto con dos servicios:
+
+- **app**: Next.js build, Dockerfile multi-stage o nixpacks autodetect. Variables: `DATABASE_URL`, `OPENAI_API_KEY`, `MAX_TOKENS_PER_RUN`, `NODE_ENV=production`.
+- **mysql**: plugin managed MySQL 8 de Railway. `DATABASE_URL` se inyecta automático en `app`.
+
+Preview environments: Railway crea un environment por cada PR si se habilita. URL única para mostrar al recruiter.
+
+Estimado: $5 USD/mes con plan Hobby. Sin cold starts, sin timeouts serverless.
+
+CI/CD: GitHub Action corre `railway up --service app` con `RAILWAY_TOKEN` como secret. Deploy automático en push a `main`.
 
 ## Arquitectura
 
@@ -122,7 +136,7 @@ Tres vistas, en español:
 - Case-simple corre end-to-end y produce Markdown similar (no idéntico) a su guía.
 - Case-complex (220 items) corre sin timeouts en <60s.
 - Tests pasan en CI.
-- Deploy Vercel funciona, preview deploy en cada PR.
+- Deploy Railway funciona (app + MySQL en mismo proyecto), preview deploy en cada PR.
 - README con instrucciones completas.
 
 ## Out of scope
