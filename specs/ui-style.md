@@ -1,294 +1,429 @@
 # Spec UI — Estilo visual
 
+Spec transversal de capa visual. Define tokens, layout, componentes y patrones.
+
 ## Referencia
 
-Captura de referencia: dashboard tipo HR/ATS con sidebar oscuro, área principal clara, cards con KPIs y gráficos. Palette violeta como acento primario. Estética moderna, limpia, datos al frente.
+Inspirado en el dashboard interno de Oceans HR (`C:\dev\oceans-hr`). Mismo lenguaje visual: púrpura profundo de marca, azul navy para títulos, asimetría de bordes redondeados en cards, layout dashboard con sidebar fija. Esta spec adapta esos tokens al dominio del challenge (solicitudes / ofertas / conciliaciones).
 
-Esta spec es transversal a `08-api-and-ui.md`. Define la capa visual: palette, tipografía, layout, componentes. La spec 08 define rutas y comportamiento.
+## Tokens
 
-## Palette
+### Colores base
 
-Tailwind config en `tailwind.config.ts`. Sin colores custom raros, todo apoyado en escalas estándar.
-
-| Rol | Color | Tailwind |
+| Token | Valor | Uso |
 |---|---|---|
-| Primary | violeta vibrante | `violet-600` (#7C3AED) |
-| Primary hover | violeta oscuro | `violet-700` (#6D28D9) |
-| Primary light | violeta tenue | `violet-50` (#F5F3FF) |
-| Sidebar bg | púrpura oscuro casi negro | `[#1F1B2E]` (custom) o `slate-900` con tint |
-| Sidebar text | gris claro | `slate-300` |
-| Sidebar text active | blanco sobre violet-600 | `white` |
-| App bg | gris muy claro | `slate-50` (#F8FAFC) |
-| Card bg | blanco | `white` |
-| Card border | gris suave | `slate-200` |
-| Text primary | gris muy oscuro | `slate-900` |
-| Text muted | gris medio | `slate-500` |
-| Divider | gris muy suave | `slate-100` |
+| `--brand-purple` | `#662f8e` | Primary. Cifras grandes, sidebar active, focos. |
+| `--company-primary` | `#662f8e` | Alias de brand-purple. |
+| `--brand-blue` | `#3953a3` | Acento. |
+| `--text-title` | `#2f458a` | Títulos, labels de KPI, links primarios. Navy. |
+| `--text-muted` | `#65758b` | Subtítulos, captions. |
+| `--text-soft` | `#6a7282` | Texto secundario en tablas. |
+| `--bg-banner` | `#edebf2` | Fondo del área de contenido, búsqueda, badges sutiles. Lavanda claro. |
+| `--bg-card` | `#ffffff` | Cards. |
+| `--border-muted` | `#a9a9a9` | Borde default de cards. |
+| `--border-soft` | `#99a1af` | Borde más sutil. |
+| `--border-light` | `#d1d5db` | Divisores internos. |
+| `--green` | `#21c45d` | Éxito. |
 
-### Estados semánticos (para pills de conciliación)
+### Estados semánticos (pills de conciliación)
 
-| Estado | Color bg | Color text |
+| Estado | Bg | Text |
 |---|---|---|
-| `match` | `emerald-100` | `emerald-800` |
-| `partial_quantity` | `amber-100` | `amber-800` |
-| `missing_from_offer` | `rose-100` | `rose-800` |
-| `extra` | `sky-100` | `sky-800` |
-| `low_confidence` | `slate-200` | `slate-700` |
+| `match` | `#dcfce7` | `#166534` |
+| `partial_quantity` | `#fef3c7` | `#92400e` |
+| `missing_from_offer` | `#fee2e2` | `#991b1b` |
+| `extra` | `#dbeafe` | `#1e40af` |
+| `low_confidence` | `#e5e7eb` | `#374151` |
 
-## Tipografía
+### Tipografía
 
-- **Fuente**: Inter (via `next/font/google`) o Geist Sans. Geist queda más moderno.
-- **Mono**: Geist Mono o JetBrains Mono para códigos de proveedor y SHA.
+Fuente única: **Inter** (vía `next/font/google`). No usar otra.
+
+```ts
+import { Inter } from 'next/font/google'
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+```
 
 Escala:
 
-| Uso | Tailwind |
+| Uso | Clase |
 |---|---|
-| Page title | `text-2xl font-semibold tracking-tight` |
-| Section heading | `text-lg font-semibold` |
-| Card label | `text-xs uppercase tracking-wide text-slate-500` |
-| KPI number | `text-4xl font-bold tabular-nums` |
-| Body | `text-sm text-slate-700` |
-| Caption | `text-xs text-slate-500` |
-| Code | `font-mono text-sm` |
+| Page title | `text-[28px] font-bold text-[#2f458a] leading-[0.85]` |
+| Page subtitle | `text-[14px] font-normal text-[#65758b] leading-[0.85]` |
+| KPI value | `text-[45px] font-bold leading-[51px] text-[var(--company-primary)]` |
+| Card title | `text-base font-semibold text-[#2f458a]` |
+| Card label | `text-sm font-semibold text-[#2f458a]` |
+| Section pill label | `text-base font-semibold text-white` |
+| Body | `text-sm text-[#6a7282]` |
+| Caption | `text-xs text-[#65758b]` |
 
 ## Layout
 
-App shell con sidebar fija + área principal.
+App shell tipo dashboard. Tres regiones: header, sidebar, main.
 
 ```
-┌──────────────┬─────────────────────────────────────────────┐
-│  Sidebar     │  Top bar: breadcrumb │ search │ user        │
-│  (240px)     ├─────────────────────────────────────────────┤
-│  - Home      │                                             │
-│  - Solicit.  │  Main content                               │
-│  - Ofertas   │  - KPI row (4 cards en grid responsive)     │
-│  - Conciliac.│  - Content cards                            │
-│  - Traza     │                                             │
-│              │                                             │
-│  Logo        │                                             │
-└──────────────┴─────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  HEADER white h-24                                         │
+│  [Logo + brand]    [Search bar lavanda]    [User]          │
+├────────────────────────────────────────────────────────────┤
+│                    [bg purple geometric]                   │
+│  SIDEBAR ┌──────────────────────────────────────────────┐  │
+│  (white) │  MAIN (bg #edebf2)                            │  │
+│  240px   │  px-[69px] py-5                               │  │
+│          │  rounded-tl-[50px] rounded-br-[50px]          │  │
+│          │  overflow-y-auto                              │  │
+│          │                                               │  │
+│          │  [Page header con icono + título + subtítulo] │  │
+│          │  [Grid de KPIs (4 cols)]                      │  │
+│          │  [Grid de cards (3 cols)]                     │  │
+│          └──────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────┘
 ```
 
-- Sidebar fijo en desktop (≥1024px), drawer en mobile.
-- Top bar sticky en scroll.
-- Main con `max-w-7xl mx-auto px-6 py-8`.
-- Grid principal: `grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4` para KPIs, `grid-cols-1 lg:grid-cols-3 gap-6` para contenido (table 2/3, summary 1/3).
+Detalles del shell:
 
-## Componentes (shadcn/ui)
+- Container root: `flex flex-col h-dvh overflow-hidden`.
+- Background geometric layer: `<div className="absolute inset-0 bg-[url('/bg-dashboard.png')] bg-no-repeat bg-center bg-cover z-0 pointer-events-none" />` detrás de sidebar + main.
+- Main area: `rounded-tl-[50px] rounded-br-[50px] overflow-hidden bg-[#edebf2]`.
+- Sidebar fija en desktop, drawer en mobile.
+- Header sticky en top.
 
-Usar shadcn/ui como base. Personalizar con la palette anterior. Componentes a instalar:
+## Componentes
 
+### StatCard (KPI)
+
+Bordes asimétricos: top-right + bottom-left redondeados, top-left + bottom-right rectos. Es la firma visual.
+
+```tsx
+<div className="
+  flex flex-col justify-between p-4
+  rounded-tr-3xl rounded-bl-3xl rounded-tl-none rounded-br-none
+  border border-[#a9a9a9] bg-white
+  flex-1 min-w-40 gap-[5.3px]
+  transition-all duration-200
+  hover:shadow-md hover:scale-[1.02] cursor-pointer
+">
+  <div className="flex items-start justify-between mb-2">
+    <span className="text-[45px] font-bold leading-[51.233px] text-[var(--company-primary)]">
+      {value}
+    </span>
+    <div className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 bg-[#edebf2] text-[#2f458a]">
+      {icon}
+    </div>
+  </div>
+  <span className="text-base font-semibold leading-4 text-[#2f458a] whitespace-pre-line">
+    {label}
+  </span>
+  {subtitle && (
+    <span className="text-xs font-bold leading-4 mt-1 text-[var(--company-primary)]">
+      {subtitle}
+    </span>
+  )}
+</div>
 ```
-button, card, badge, table, tabs, dialog, sheet, dropdown-menu,
-input, select, label, separator, scroll-area, skeleton, sonner,
-progress, alert, tooltip
+
+Estado seleccionado: cambiar borde a `border-[var(--company-primary)] border-b-3` (borde inferior más grueso).
+
+### Card de contenido
+
+```tsx
+<div className="
+  flex-1 border border-[#d1d5db]
+  rounded-tr-3xl rounded-bl-3xl rounded-tl-none rounded-br-none
+  bg-white p-5
+">
+  <div className="flex items-center gap-2 mb-6">
+    <Icon className="w-5 h-5 text-[#2f458a]" />
+    <span className="text-base font-semibold text-[#2f458a] leading-4">
+      {title}
+    </span>
+  </div>
+  {children}
+</div>
 ```
 
-### Card de KPI
+### Section pill (heading dentro de la grilla)
 
-Layout interno:
+Pill de azul navy con texto blanco, anclado a la izquierda del contenido. Se usa para títulos de cards inferiores ("Actividad reciente", "Conciliaciones recientes", etc).
 
-```
-┌──────────────────────────┐
-│ LABEL EN CAPS    🟪 icon │
-│                          │
-│ 220                      │
-│                          │
-│ +12% vs últ. semana      │
-└──────────────────────────┘
+```tsx
+<div className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#2f458a] text-white rounded-[10px] self-start shrink-0">
+  <Icon className="w-5 h-5" />
+  <span className="text-base font-semibold">{label}</span>
+</div>
 ```
 
-- Card con `p-5 rounded-2xl border bg-white shadow-sm`.
-- Label arriba: `text-xs uppercase tracking-wide text-slate-500`.
-- Icono arriba derecha en círculo coloreado: `w-10 h-10 rounded-xl bg-violet-100 text-violet-600 grid place-items-center`.
-- Número: `text-4xl font-bold tabular-nums mt-3`.
-- Sub-label: `text-xs text-slate-500 mt-1`.
+### Status badge (conciliación)
 
-### Card de datos
+Pills coloreadas con la palette semántica. Sin shadcn, custom span:
 
-- Mismo wrapper que KPI pero `p-6`.
-- Header con título + acción opcional (botón "ver más", dropdown).
-- Content: chart, tabla o lista.
+```tsx
+<span className={cn(
+  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+  variants[relation]
+)}>
+  {labels[relation]}
+</span>
+```
+
+Donde `variants`:
+
+```ts
+{
+  match:               "bg-[#dcfce7] text-[#166534]",
+  partial_quantity:    "bg-[#fef3c7] text-[#92400e]",
+  missing_from_offer:  "bg-[#fee2e2] text-[#991b1b]",
+  extra:               "bg-[#dbeafe] text-[#1e40af]",
+  low_confidence:      "bg-[#e5e7eb] text-[#374151]",
+}
+```
 
 ### Sidebar
 
-- Bg `bg-[#1F1B2E]` o `bg-slate-900`.
-- Items: `flex items-center gap-3 px-4 py-2.5 rounded-lg`.
-- Item activo: `bg-violet-600 text-white`.
-- Item hover: `bg-slate-800 text-white`.
-- Sección label: `text-xs uppercase tracking-wider text-slate-500 px-4 mt-6 mb-2`.
-- Logo abajo con `mt-auto`.
+Fondo blanco con texto purple primario. Estructura por categorías (overview, recruitment, hr, system) adaptada al dominio:
 
-### Top bar
+- Home
+- Solicitudes
+- Ofertas (subitems: Subir, Procesadas)
+- Conciliaciones
+- Trazabilidad
 
-- `h-16 flex items-center px-6 border-b bg-white sticky top-0 z-10`.
-- Izquierda: breadcrumb o título.
-- Centro: search (opcional, ocultable).
-- Derecha: avatar dropdown.
+```tsx
+<Link
+  href={item.href}
+  className="flex items-center gap-2 py-1.5 px-2.5 rounded-lg text-[13px] font-semibold cursor-pointer transition-colors duration-150"
+  style={isActive
+    ? { backgroundColor: 'var(--company-primary)', color: 'white' }
+    : { color: 'var(--company-primary)' }
+  }
+>
+  <Icon className="w-5 h-5 shrink-0" />
+  <span>{item.label}</span>
+</Link>
+```
+
+Sub-items con tree visual (bullet point + línea vertical sutil del color primary con opacity 0.25).
+
+### Header bar
+
+```tsx
+<header className="bg-white shrink-0">
+  <div className="flex items-center justify-between h-24 pl-10 pr-6">
+    {/* Logo + brand */}
+    {/* Search bar */}
+    <div className="flex-1 max-w-[600px] mx-6">
+      <div className="flex items-center gap-[18px] h-[54px] px-[27px] pr-4 rounded-[25px] bg-[#edebf2] text-[#65758b]">
+        <SearchIcon />
+        <input className="border-none bg-transparent outline-none text-base text-[#101828] w-full placeholder:text-[#65758b]" />
+      </div>
+    </div>
+    {/* User dropdown */}
+  </div>
+</header>
+```
+
+Search bar con `rounded-[25px]` (muy redondo) + bg lavanda `#edebf2`. Es otra firma visual.
+
+### Botones
+
+- Primario: bg `#662f8e`, texto blanco, `rounded-[10px]`, `px-4 py-2.5`.
+- Secundario: bg `white`, borde `#a9a9a9`, texto `#2f458a`.
+- Destructivo: bg `#dc2626`, texto blanco.
+- Hover: 90% opacity o shade más oscuro.
 
 ### Tabla de conciliación
 
-- `<Table>` de shadcn.
-- Header `text-xs uppercase tracking-wide text-slate-500 bg-slate-50`.
-- Filas con `border-b border-slate-100` y hover `bg-slate-50`.
-- Columna de relación con `<Badge>` de la palette semántica.
-- Columna de qty con `tabular-nums text-right`.
-- Columna de rationale con `text-slate-600 max-w-md truncate` + tooltip.
-- Acción al final: botón con icono para ver detalle (abre Sheet).
-
-### Status pill
+Sin shadcn. Tabla nativa con estilos directos:
 
 ```tsx
-<Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-  Match
-</Badge>
+<table className="w-full">
+  <thead className="bg-[#edebf2]">
+    <tr>
+      <th className="text-left text-xs uppercase tracking-wide text-[#65758b] px-4 py-3">
+        ...
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr className="border-b border-[#d1d5db] hover:bg-[#f9fafb]">
+      <td className="px-4 py-3 text-sm">...</td>
+    </tr>
+  </tbody>
+</table>
 ```
 
-Variantes para los 5 estados semánticos definidos arriba.
+Columnas: línea oferta, descripción ofertada, qty ofertada, item pedido (link), qty pedida, relación (badge), confianza, rationale (truncado + tooltip), acciones.
 
-### Estados de carga
+## Decisión: shadcn/ui
 
-- KPIs con `<Skeleton className="h-24 w-full rounded-2xl" />`.
-- Tablas con `<Skeleton className="h-12 w-full" />` × N.
-- Botones de upload con spinner inline (`Loader2` de `lucide-react`).
+Cambio respecto al spec anterior. Decisión final:
+
+**Sin shadcn/ui**. Oceans HR no lo usa y el resultado se ve consistente y limpio sin esa dependencia. Componentes custom en `components/ui/` con Tailwind. Esto:
+
+- Reduce dependencias.
+- Da control total del estilo (los detalles asimétricos no salen de un componente shadcn de fábrica).
+- Es lo que ya está validado en el proyecto de referencia.
+
+Excepciones donde sí conviene usar utilidades de terceros:
+
+- `lucide-react` para iconos.
+- `sonner` o `react-hot-toast` para toasts.
+- `@radix-ui/react-dialog` raw si hace falta modal accesible (sin la capa shadcn).
 
 ## Sombras y bordes
 
-- Cards: `shadow-sm border border-slate-200`.
-- Hover en cards interactivas: `hover:shadow-md transition-shadow`.
+- Cards: borde sutil (`border border-[#a9a9a9]` o `border-[#d1d5db]`), sin shadow default.
+- Hover en cards interactivas: `hover:shadow-md hover:scale-[1.02] transition-all duration-200`.
 - Modales: `shadow-xl`.
-- Sin sombras agresivas. Borde sutil es preferido para look moderno.
+- La firma visual es el **borde + asimetría de corners**, no la sombra.
 
 ## Iconos
 
-- `lucide-react`. Tamaño base `w-5 h-5`.
+`lucide-react` con tamaño base:
+
 - Sidebar: `w-5 h-5`.
-- KPI: `w-5 h-5` dentro de círculo `w-10 h-10`.
+- KPI: `w-5 h-5` o `w-6 h-6` dentro de un cuadrado `w-11 h-11 rounded-[10px] bg-[#edebf2]`.
 - Botones: `w-4 h-4`.
 
-Iconos sugeridos por sección:
+Iconos mapeados al dominio:
 
-- Home: `LayoutDashboard`
-- Solicitudes: `FileText`
-- Ofertas: `Package`
-- Conciliaciones: `GitCompare`
-- Trazabilidad: `History`
+- Home → `LayoutDashboard`
+- Solicitudes → `FileText`
+- Ofertas → `Package`
+- Conciliaciones → `GitCompareArrows`
+- Trazabilidad → `History` o `ScrollText`
 
-## Páginas mapeadas al dominio
+## Páginas
 
 ### `/` Home
 
-- Top bar: "Resumen general".
-- 4 KPIs: Solicitudes activas, Ofertas procesadas, Items conciliados, % cobertura promedio.
-- Card "Ofertas recientes" (tabla con últimas 5).
-- Card "Estado de conciliación" (donut: match/partial/missing/extra).
+Header con icono `LayoutDashboard` + título "Inicio" + subtítulo "Vista general del sistema".
+
+4 StatCards en grid `grid-cols-4 gap-4`:
+
+1. Solicitudes activas (purple variant, icono FileText).
+2. Ofertas procesadas (blue variant, icono Package).
+3. Items conciliados (green variant, icono CheckCircle).
+4. Cobertura promedio % (blue variant, icono TrendingUp).
+
+Charts row con `grid` o `flex gap-4`:
+
+- Card grande (flex-2): conciliaciones recientes (tabla con últimas 5).
+- Card chica (flex-1): distribución de estados (donut: match/partial/missing/extra).
+
+Bottom row con section pills:
+
+- "Actividad reciente"
+- "Ofertas en proceso"
+- "Solicitudes con pendientes"
 
 ### `/solicitudes`
 
-- Lista de solicitudes con cantidad de items y ofertas asociadas.
+Lista de PurchaseRequest con cantidad de items y ofertas asociadas. Tabla simple o cards.
 
 ### `/solicitudes/[id]`
 
-- Header con título de solicitud.
-- Tabla de items pedidos.
-- Lista de ofertas recibidas con estado.
+Header con título de solicitud + 2 KPIs (items totales, ofertas recibidas). Tabla de items pedidos. Lista de ofertas.
 
 ### `/ofertas/upload`
 
-- Drag & drop zone grande.
-- Selector de solicitud target.
-- Botón "Procesar".
-- Después de subir: progress bar con etapas (Subido → Extrayendo → Conciliando → Listo).
+Drag & drop zone grande con `rounded-tr-3xl rounded-bl-3xl rounded-tl-none rounded-br-none border-2 border-dashed border-[#a9a9a9]`. Selector de solicitud target. Botón Procesar primary. Después de subir: barra de progreso con etapas (Subido → Extrayendo → Conciliando → Listo).
 
 ### `/ofertas/[id]`
 
-- Header con proveedor, fecha, archivo origen.
-- 4 KPIs: items cubiertos, faltantes, sobrantes, parciales.
-- Tabs:
-  - "Oferta procesada": tabla de OfferItem.
-  - "Conciliación": tabla de ReconciliationLine con pills semánticas.
-  - "Resumen Markdown": render del markdown + botón descargar.
-  - "Trazabilidad": tabla de DecisionLog con detalle expandible.
+Header con proveedor + fecha + archivo origen. 4 StatCards: cubiertos, faltantes, sobrantes, parciales. Tabs:
+
+- "Oferta procesada": tabla de OfferItem.
+- "Conciliación": tabla de ReconciliationLine con badges semánticos.
+- "Resumen Markdown": render con `marked` + botón descargar.
+- "Trazabilidad": tabla de DecisionLog expandible.
 
 ## Responsive
 
-- Desktop ≥1024px: layout completo con sidebar.
-- Tablet 768-1023px: sidebar colapsable en drawer.
-- Mobile <768px: sidebar drawer, KPIs en 2 columnas, tablas con scroll horizontal.
+- Desktop ≥1024px: layout completo.
+- Tablet 768-1023px: sidebar drawer.
+- Mobile <768px: sidebar drawer, KPIs en 2 columnas, tablas con `overflow-x-auto`.
 
-Mobile no es prioridad de challenge pero no debe romperse. Tablas con `overflow-x-auto`.
+No es prioridad pero no debe romperse.
 
 ## Dark mode
 
-Out of scope para este challenge. Solo light. Si el evaluador lo pide, se agrega después con `next-themes`.
+Out of scope.
 
 ## Animaciones
 
-- Transiciones de hover: `transition-colors duration-150`.
-- Aparición de cards: sin animación intrusiva.
-- Sheet/Dialog: animación default de shadcn.
-- Sin scroll reveal, sin paralaje, sin librerías de animación pesadas. `framer-motion` solo si surge un caso específico.
+- Transiciones de hover: `transition-all duration-200`.
+- Scale sutil en cards hover: `hover:scale-[1.02]`.
+- Sin framer-motion. Sin parallax. Sin scroll reveals.
 
 ## Accesibilidad
 
-- Contraste AA mínimo en todos los pares texto/fondo.
-- Foco visible con `focus-visible:ring-2 ring-violet-600 ring-offset-2`.
-- Botones con labels accesibles (`aria-label` cuando solo hay icono).
+- Contraste AA en todos los pares texto/fondo (validado: purple sobre white = 7.2, navy sobre white = 8.1, todos OK).
+- Focus visible: `focus-visible:ring-2 focus-visible:ring-[var(--company-primary)] focus-visible:ring-offset-2`.
+- Botones con icono solo deben tener `aria-label`.
 - Tablas con `<caption>` cuando aplique.
 - Estados de loading con `aria-busy`.
 
-shadcn/ui ya cubre Radix accesible por default. No romperlo.
+## Recursos visuales necesarios
 
-## Recursos visuales
-
-- Logo placeholder: texto "OK" con tipografía bold en violet, hasta que haya brand.
-- Favicon: monograma similar.
-- Sin imágenes stock, sin gradientes recargados.
+- `public/bg-dashboard.png`: imagen geométrica de fondo púrpura. Si no hay asset, generar uno con CSS (gradiente o pattern SVG inline).
+- Logo del proyecto en `public/`. Placeholder: texto "OK" en bold purple.
 
 ## Estructura de archivos UI
 
 ```
 src/
   app/
-    layout.tsx                  # raíz con fonts + providers
+    layout.tsx                  # raíz con font Inter + providers
     (dashboard)/
-      layout.tsx                # shell con sidebar + topbar
-      page.tsx                  # home con KPIs
+      layout.tsx                # shell con sidebar + topbar + bg geometric
+      page.tsx                  # home con KPIs + cards
+      loading.tsx
       solicitudes/
         page.tsx
         [id]/page.tsx
       ofertas/
         upload/page.tsx
         [id]/
-          page.tsx              # tabs container
+          page.tsx
           loading.tsx
           error.tsx
   components/
-    ui/                         # shadcn/ui generated
     layout/
-      sidebar.tsx
-      topbar.tsx
-    kpi-card.tsx
-    status-badge.tsx
-    offer-table.tsx
-    reconciliation-table.tsx
-    markdown-viewer.tsx
-    upload-zone.tsx
-    decision-log-table.tsx
+      DashboardLayout.tsx
+      DashboardSidebar.tsx
+      DashboardHeader.tsx
+    cards/
+      StatCard.tsx
+      DataCard.tsx
+    badges/
+      StatusBadge.tsx
+    tables/
+      ReconciliationTable.tsx
+      OfferItemsTable.tsx
+      DecisionLogTable.tsx
+    ui/
+      Button.tsx
+      Input.tsx
+      Badge.tsx
+      SectionPill.tsx
+      UploadZone.tsx
+      MarkdownViewer.tsx
 ```
 
 Un componente por archivo. Cada uno ≤200 líneas.
 
 ## Criterios de aceptación
 
-- Página `/` renderiza con sidebar + topbar + 4 KPIs + 2 cards.
-- Tabla de conciliación muestra los 5 estados con pills correctas.
-- Subir un PDF dispara la zona drag & drop con feedback visual.
+- Página `/` renderiza con header + sidebar + main con corners redondeados asimétricos + 4 StatCards + 2 cards charts + 3 cards bottom.
+- StatCard tiene la firma asimétrica `rounded-tr-3xl rounded-bl-3xl`.
+- Badge de conciliación muestra los 5 estados con los colores semánticos definidos.
+- Search bar header tiene `rounded-[25px] bg-[#edebf2]`.
+- Sidebar muestra item activo con bg purple primary + texto blanco.
 - Mobile (≤768px) no rompe, sidebar abre en drawer.
-- Lighthouse: Performance ≥85, Accessibility ≥95, Best Practices ≥95.
+- Lighthouse: Performance ≥85, Accessibility ≥95.
 - Sin warnings de hidratación SSR.
 
 ## Próximo
 
-- `04-extract-xlsx.md` retoma el flujo de specs funcionales. Esta spec UI se referencia desde `08-api-and-ui.md`.
+- `04-extract-xlsx.md` ya está. La siguiente funcional es `05-reconcile.md`.
