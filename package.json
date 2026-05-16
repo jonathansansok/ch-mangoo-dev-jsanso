@@ -37,7 +37,6 @@
     "openai": "^4.78.0",
     "p-limit": "^6.2.0",
     "p-retry": "^7.0.0",
-    "pdf-parse": "^1.1.1",
     "pino": "^10.0.0",
     "pino-pretty": "^11.0.0",
     "react": "^19.0.0",
@@ -45,6 +44,7 @@
     "react-hook-form": "^7.55.0",
     "server-only": "^0.0.1",
     "sonner": "^2.0.0",
+    "unpdf": "^1.6.2",
     "xlsx": "^0.18.5",
     "zod": "^4.0.0"
   },
@@ -55,7 +55,6 @@
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.0.0",
-    "@types/pdf-parse": "^1.1.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitest/coverage-v8": "^3.0.0",

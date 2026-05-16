@@ -1,5 +1,6 @@
 import 'server-only';
-import pdfParse from 'pdf-parse';
+import { extractText, getDocumentProxy } from 'unpdf';
+import { logger } from '@/lib/logger';
 
 export const MIN_TEXT_THRESHOLD = 200;
 
@@ -16,19 +17,35 @@ export class PdfTextError extends Error {
 export interface PdfTextResult {
   text: string;
   pages: number;
+  pageTexts: string[];
 }
 
 export async function extractPdfText(buffer: Buffer): Promise<PdfTextResult> {
-  let parsed;
+  const magic = buffer.subarray(0, 5).toString('latin1');
+  const tail = buffer.subarray(buffer.length - 6, buffer.length - 1).toString('latin1');
+  logger.info({ bufferLength: buffer.length, magic, tail }, '[pdf-text] buffer diagnostic');
+  if (!magic.startsWith('%PDF-')) {
+    throw new PdfTextError(
+      `Buffer no es PDF válido (magic="${magic}", length=${buffer.length})`,
+      'parse_failed',
+    );
+  }
+
+  let pageTexts: string[];
+  let pages: number;
   try {
-    parsed = await pdfParse(buffer);
+    const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const doc = await getDocumentProxy(uint8);
+    pages = doc.numPages;
+    const extracted = await extractText(doc, { mergePages: false });
+    pageTexts = Array.isArray(extracted.text) ? extracted.text : [extracted.text];
   } catch (err) {
     const msg = (err as Error).message ?? '';
     const reason = /encrypt|password/i.test(msg) ? 'encrypted' : 'parse_failed';
-    throw new PdfTextError(`pdf-parse falló: ${msg}`, reason);
+    throw new PdfTextError(`unpdf falló: ${msg}`, reason);
   }
 
-  const text = parsed.text.trim();
+  const text = pageTexts.join('\n').trim();
   if (text.length < MIN_TEXT_THRESHOLD) {
     throw new PdfTextError(
       `Texto extraído insuficiente (${text.length} chars < ${MIN_TEXT_THRESHOLD})`,
@@ -36,5 +53,14 @@ export async function extractPdfText(buffer: Buffer): Promise<PdfTextResult> {
     );
   }
 
-  return { text, pages: parsed.numpages };
+  logger.info(
+    {
+      pages,
+      totalChars: text.length,
+      pageChars: pageTexts.map((p) => p.length),
+    },
+    '[pdf-text] parsed',
+  );
+
+  return { text, pages, pageTexts };
 }
