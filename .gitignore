@@ -31,7 +31,9 @@ build/
 .env
 .env.local
 .env.*.local
+.env.test
 !.env.example
+!.env.test.example
 
 # DB local
 *.sqlite
@@ -44,6 +46,10 @@ prisma/migrations/dev.db*
 # Testing
 coverage/
 .nyc_output/
+
+# Scratch dumps fuera de tests/integration
+tests/*.txt
+tests/excel*
 
 # IDE
 .vscode/

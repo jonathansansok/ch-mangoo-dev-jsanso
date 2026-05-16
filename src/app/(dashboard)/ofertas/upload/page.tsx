@@ -20,7 +20,7 @@ export default async function UploadOfertaPage() {
         <Upload className="h-8 w-8 shrink-0 text-[#2f458a]" />
         <h1 className="text-[28px] leading-tight font-bold text-[#2f458a]">Subir oferta</h1>
         <p className="text-sm text-[#65758b]">
-          Asociá una oferta PDF a una solicitud de compra existente
+          Asociá una oferta PDF o XLSX a una solicitud de compra existente
         </p>
       </div>
 

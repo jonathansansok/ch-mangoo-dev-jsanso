@@ -26,11 +26,11 @@ export type ExtractedHeader = z.infer<typeof ExtractedHeader>;
 export type ExtractedItem = z.infer<typeof ExtractedItem>;
 export type ExtractedOffer = z.infer<typeof ExtractedOffer>;
 
-export type ExtractStrategy = 'text' | 'multimodal';
+export type ExtractStrategy = 'text' | 'multimodal' | 'xlsx-direct' | 'xlsx-llm-mapped';
 
 export interface ExtractMeta {
   strategy: ExtractStrategy;
-  model: string;
+  model: string | null;
   fromCache: boolean;
 }
 

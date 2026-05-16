@@ -16,6 +16,8 @@ Pragmático antes que vistoso.
 
 Por ahora solo el spec (`docs/challenge.pdf`) y los datos de los escenarios (`fixtures/scenarios/`). Stack y código todavía no existen. Las decisiones macro están en `specs/00-overview.md`.
 
+Resultados medidos contra `reconciliation_guide.md` de cada escenario: ver `docs/benchmarks.md`. Cobertura actual: 100% case-simple, 99.4% PDF complex, 99.1% XLSX complex.
+
 ## Entregables que pide el spec
 
 - Seed inicial de DB desde los CSVs. La importación CSV no es feature runtime, es solo seed.

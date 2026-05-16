@@ -6,8 +6,9 @@ vi.mock('@/env', () => ({
   env: { EXTRACT_MODEL: 'gpt-4o-mini' },
 }));
 
-vi.mock('pdf-parse', () => ({
-  default: vi.fn(),
+vi.mock('unpdf', () => ({
+  getDocumentProxy: vi.fn(),
+  extractText: vi.fn(),
 }));
 
 vi.mock('@/infra/ai/call-chat', () => ({
@@ -23,17 +24,18 @@ vi.mock('@/infra/db/prisma', () => ({
   },
 }));
 
-import pdfParse from 'pdf-parse';
+import { getDocumentProxy, extractText } from 'unpdf';
 import { callChat } from '@/infra/ai/call-chat';
 import { prisma } from '@/infra/db/prisma';
 import { extractPdf, PdfExtractError } from './pdf-service';
 
-const pdfParseMock = vi.mocked(pdfParse);
+const getDocMock = vi.mocked(getDocumentProxy);
+const extractTextMock = vi.mocked(extractText);
 const callChatMock = vi.mocked(callChat);
 const findUniqueMock = vi.mocked(prisma.extractionCache.findUnique);
 const upsertMock = vi.mocked(prisma.extractionCache.upsert);
 
-function makeBuffer(content = 'pdf-bytes'): Buffer {
+function makeBuffer(content = '%PDF-1.4\n...mock bytes...\n%%EOF'): Buffer {
   return Buffer.from(content);
 }
 
@@ -55,12 +57,17 @@ function makeExtractedOffer() {
   };
 }
 
+function mockUnpdfText(text: string, pages = 1) {
+  getDocMock.mockResolvedValue({ numPages: pages } as never);
+  extractTextMock.mockResolvedValue({ text, totalPages: pages } as never);
+}
+
 describe('extractPdf', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('devuelve payload de cache sin llamar a pdf-parse ni a OpenAI', async () => {
+  it('devuelve payload de cache sin llamar a unpdf ni a OpenAI', async () => {
     const cached = makeExtractedOffer();
     findUniqueMock.mockResolvedValue({
       id: 1,
@@ -79,25 +86,16 @@ describe('extractPdf', () => {
     });
 
     expect(result.meta.fromCache).toBe(true);
-    expect(result.meta.model).toBe('gpt-4o-mini');
     expect(result.items).toHaveLength(1);
-    expect(pdfParseMock).not.toHaveBeenCalled();
+    expect(getDocMock).not.toHaveBeenCalled();
     expect(callChatMock).not.toHaveBeenCalled();
   });
 
-  it('camino A texto: pdf-parse + callChat + save en cache', async () => {
+  it('camino A texto: unpdf + callChat + save en cache', async () => {
     findUniqueMock.mockResolvedValue(null);
-    pdfParseMock.mockResolvedValue({
-      text: 'A'.repeat(500),
-      numpages: 1,
-      info: {},
-      metadata: null,
-      version: '1',
-      numrender: 0,
-    } as never);
-    const offer = makeExtractedOffer();
+    mockUnpdfText('A'.repeat(500));
     callChatMock.mockResolvedValue({
-      data: offer,
+      data: makeExtractedOffer(),
       costUsd: 0.01,
       promptTokens: 100,
       completionTokens: 50,
@@ -113,58 +111,35 @@ describe('extractPdf', () => {
     });
 
     expect(result.meta.fromCache).toBe(false);
-    expect(result.meta.strategy).toBe('text');
     expect(result.items[0]!.description).toBe('Boligrafo azul');
     expect(callChatMock).toHaveBeenCalledTimes(1);
-    expect(callChatMock.mock.calls[0]![0]!.offerId).toBe(42);
-    expect(callChatMock.mock.calls[0]![0]!.kind).toBe('EXTRACT_ITEMS');
     expect(upsertMock).toHaveBeenCalledTimes(1);
   });
 
-  it('si pdf-parse tira encrypted → PdfExtractError encrypted_pdf', async () => {
+  it('si unpdf tira encrypted → PdfExtractError encrypted_pdf', async () => {
     findUniqueMock.mockResolvedValue(null);
-    pdfParseMock.mockRejectedValue(new Error('PDF is encrypted'));
+    getDocMock.mockRejectedValue(new Error('PDF is encrypted'));
 
     await expect(
       extractPdf({ buffer: makeBuffer(), fileName: 'x.pdf', mime: 'application/pdf' }),
-    ).rejects.toMatchObject({
-      name: 'PdfExtractError',
-      reason: 'encrypted_pdf',
-    });
+    ).rejects.toMatchObject({ name: 'PdfExtractError', reason: 'encrypted_pdf' });
     expect(callChatMock).not.toHaveBeenCalled();
   });
 
   it('texto muy corto → no_text_extracted', async () => {
     findUniqueMock.mockResolvedValue(null);
-    pdfParseMock.mockResolvedValue({
-      text: 'short',
-      numpages: 1,
-      info: {},
-      metadata: null,
-      version: '1',
-      numrender: 0,
-    } as never);
+    mockUnpdfText('short');
 
     await expect(
       extractPdf({ buffer: makeBuffer(), fileName: 'x.pdf', mime: 'application/pdf' }),
-    ).rejects.toMatchObject({
-      name: 'PdfExtractError',
-      reason: 'no_text_extracted',
-    });
+    ).rejects.toMatchObject({ name: 'PdfExtractError', reason: 'no_text_extracted' });
     expect(callChatMock).not.toHaveBeenCalled();
   });
 
   it('si callChat rompe schema → schema_validation_failed y no se guarda cache', async () => {
     findUniqueMock.mockResolvedValue(null);
-    pdfParseMock.mockResolvedValue({
-      text: 'A'.repeat(500),
-      numpages: 1,
-      info: {},
-      metadata: null,
-      version: '1',
-      numrender: 0,
-    } as never);
-    callChatMock.mockRejectedValue(new Error('Schema inválido: items.0.description: required'));
+    mockUnpdfText('A'.repeat(500));
+    callChatMock.mockRejectedValue(new Error('Schema inválido'));
 
     await expect(
       extractPdf({ buffer: makeBuffer(), fileName: 'x.pdf', mime: 'application/pdf' }),

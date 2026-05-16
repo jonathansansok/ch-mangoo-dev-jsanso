@@ -22,7 +22,7 @@ export function UploadForm({ requests }: { requests: RequestOption[] }) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
-      toast.error('Seleccioná un archivo PDF');
+      toast.error('Seleccioná un archivo PDF o XLSX');
       return;
     }
     if (!requestId) {
@@ -70,7 +70,7 @@ export function UploadForm({ requests }: { requests: RequestOption[] }) {
         <UploadZone
           file={file}
           onChange={setFile}
-          accept="application/pdf"
+          accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
           maxSize={MAX_OFFER_FILE_SIZE}
           disabled={pending}
         />

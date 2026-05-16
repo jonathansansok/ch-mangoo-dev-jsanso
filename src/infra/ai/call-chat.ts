@@ -19,6 +19,7 @@ export interface ChatCallArgs<TSchema extends ZodTypeAny> {
   userPrompt: string;
   outputSchema: TSchema;
   candidatesConsidered?: unknown;
+  maxTokens?: number;
 }
 
 export interface ChatCallResult<T> {
@@ -53,10 +54,38 @@ async function callOpenAIOnce<T>(
     model: args.model,
     messages,
     response_format: { type: 'json_object' },
+    ...(args.maxTokens !== undefined && { max_tokens: args.maxTokens }),
   });
 
   const rawContent = response.choices[0]?.message?.content ?? '';
   const usage = response.usage ?? { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+  const finishReason = response.choices[0]?.finish_reason;
+  logger.info(
+    {
+      model: args.model,
+      kind: args.kind,
+      offerId: args.offerId,
+      finishReason,
+      promptTokens: usage.prompt_tokens,
+      completionTokens: usage.completion_tokens,
+      maxTokens: args.maxTokens,
+      durationMs: Date.now() - start,
+      rawLength: rawContent.length,
+    },
+    '[openai] response received',
+  );
+  if (finishReason === 'length') {
+    logger.warn(
+      {
+        model: args.model,
+        kind: args.kind,
+        maxTokens: args.maxTokens,
+        completionTokens: usage.completion_tokens,
+        rawTail: rawContent.slice(-200),
+      },
+      '[openai] RESPONSE TRUNCATED by max_tokens — items podrían estar incompletos',
+    );
+  }
 
   let parsedJson: unknown;
   try {

@@ -15,6 +15,19 @@ vi.mock('@/infra/extract/pdf-service', () => {
   return { extractPdf: vi.fn(), PdfExtractError };
 });
 
+vi.mock('@/infra/extract/xlsx-service', () => {
+  class XlsxExtractError extends Error {
+    constructor(
+      message: string,
+      public reason: string,
+    ) {
+      super(message);
+      this.name = 'XlsxExtractError';
+    }
+  }
+  return { extractXlsx: vi.fn(), XlsxExtractError };
+});
+
 vi.mock('./persist-extracted', () => ({
   persistExtractedOffer: vi.fn(),
 }));
@@ -23,14 +36,31 @@ vi.mock('./status', () => ({
   setOfferStatus: vi.fn(),
 }));
 
+vi.mock('@/infra/reconcile/reconcile-service', () => {
+  class ReconcileError extends Error {
+    constructor(
+      message: string,
+      public reason: string,
+    ) {
+      super(message);
+      this.name = 'ReconcileError';
+    }
+  }
+  return { reconcileOffer: vi.fn(), ReconcileError };
+});
+
 import { extractPdf, PdfExtractError } from '@/infra/extract/pdf-service';
+import { extractXlsx } from '@/infra/extract/xlsx-service';
+import { reconcileOffer } from '@/infra/reconcile/reconcile-service';
 import { persistExtractedOffer } from './persist-extracted';
 import { setOfferStatus } from './status';
 import { processOfferPipeline } from './pipeline';
 
 const extractMock = vi.mocked(extractPdf);
+const extractXlsxMock = vi.mocked(extractXlsx);
 const persistMock = vi.mocked(persistExtractedOffer);
 const setStatusMock = vi.mocked(setOfferStatus);
+const reconcileMock = vi.mocked(reconcileOffer);
 
 const baseArgs = {
   offerId: 42,
@@ -61,21 +91,47 @@ function makeExtracted() {
 describe('processOfferPipeline', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('happy path: EXTRACTING → EXTRACTED', async () => {
+  it('happy path: EXTRACTING → EXTRACTED → reconcile', async () => {
     extractMock.mockResolvedValue(makeExtracted());
     persistMock.mockResolvedValue();
     setStatusMock.mockResolvedValue();
+    reconcileMock.mockResolvedValue();
 
     await processOfferPipeline(baseArgs);
 
     expect(setStatusMock.mock.calls.map((c) => c[1])).toEqual(['EXTRACTING', 'EXTRACTED']);
     expect(persistMock).toHaveBeenCalledTimes(1);
+    expect(reconcileMock).toHaveBeenCalledWith(42);
   });
 
   it('mime no soportado → FAILED unsupported_mime sin extract', async () => {
-    await processOfferPipeline({ ...baseArgs, mime: 'application/vnd.ms-excel' });
+    await processOfferPipeline({
+      ...baseArgs,
+      fileName: 'x.txt',
+      mime: 'text/plain',
+    });
     expect(extractMock).not.toHaveBeenCalled();
+    expect(extractXlsxMock).not.toHaveBeenCalled();
     expect(setStatusMock).toHaveBeenCalledWith(42, 'FAILED', 'unsupported_mime');
+  });
+
+  it('xlsx mime → usa extractXlsx, no extractPdf', async () => {
+    extractXlsxMock.mockResolvedValue({
+      ...makeExtracted(),
+      meta: { strategy: 'xlsx-direct' as const, model: null, fromCache: false },
+    });
+    persistMock.mockResolvedValue();
+    setStatusMock.mockResolvedValue();
+    reconcileMock.mockResolvedValue();
+
+    await processOfferPipeline({
+      ...baseArgs,
+      fileName: 'x.xlsx',
+      mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    expect(extractXlsxMock).toHaveBeenCalledTimes(1);
+    expect(extractMock).not.toHaveBeenCalled();
+    expect(setStatusMock.mock.calls.map((c) => c[1])).toEqual(['EXTRACTING', 'EXTRACTED']);
   });
 
   it('extract tira PdfExtractError → FAILED con su reason', async () => {
