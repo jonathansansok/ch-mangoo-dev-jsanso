@@ -67,14 +67,16 @@ function headerSection(view: ReconciliationView): string {
 
 function indicatorsSection(view: ReconciliationView): string {
   const total = view.request.totalItems;
-  const pct = total > 0 ? (view.itemsCovered / total) * 100 : 0;
+  const covered = view.itemsCovered + view.itemsPartial;
+  const pct = total > 0 ? (covered / total) * 100 : 0;
   return [
     '## Indicadores',
     '',
     '| Métrica | Valor |',
     '|---|---:|',
     `| Items pedidos | ${total} |`,
-    `| Items cubiertos (match + parciales) | ${view.itemsCovered} (${formatPercent(pct)}) |`,
+    `| Cobertura (match + parciales) | ${covered} (${formatPercent(pct)}) |`,
+    `| Items match | ${view.itemsCovered} |`,
     `| Items con cantidad parcial | ${view.itemsPartial} |`,
     `| Items faltantes | ${view.itemsMissing} |`,
     `| Items sobrantes en la oferta | ${view.itemsExtra} |`,

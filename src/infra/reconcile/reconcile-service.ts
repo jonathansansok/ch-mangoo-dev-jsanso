@@ -16,6 +16,12 @@ import {
 } from '@/core/reconcile/judge-prompts';
 import { resolveConflicts, type ResolvableDecision } from '@/core/reconcile/conflict-resolution';
 import { embedOfferItems, embedRequestItems } from './embed-items';
+import {
+  applyRecoveries,
+  runReversePass,
+  type ReverseExtraItem,
+  type ReverseRequestItem,
+} from './reverse-pass';
 
 const JUDGE_CONCURRENCY = 5;
 
@@ -97,12 +103,29 @@ export async function reconcileOffer(offerId: number): Promise<void> {
   const requestById = new Map(offer.request.items.map((it) => [it.id, it]));
   const offerById = new Map(offer.items.map((it) => [it.id, it]));
 
-  log.info({ k: env.SHORTLIST_K }, '[reconcile] building shortlists');
+  log.info(
+    {
+      k: env.SHORTLIST_K,
+      offerItems: offerEmbed.embeddings.length,
+      requestItems: reqEmbed.embeddings.length,
+    },
+    '[reconcile] building forward shortlists',
+  );
   const shortlists = new Map<number, Candidate[]>();
+  let lowSimCount = 0;
   for (const oe of offerEmbed.embeddings) {
     const candidates = shortlistFor(oe.vector, reqEmbed.embeddings, env.SHORTLIST_K);
     shortlists.set(oe.id, candidates);
+    if ((candidates[0]?.similarity ?? 0) < env.MIN_SIMILARITY) lowSimCount += 1;
   }
+  log.info(
+    {
+      shortlistsBuilt: shortlists.size,
+      offersWithTopBelowMinSim: lowSimCount,
+      minSim: env.MIN_SIMILARITY,
+    },
+    '[reconcile] shortlists ready',
+  );
 
   const batches = chunk(offer.items, env.JUDGE_BATCH_SIZE);
   log.info({ batches: batches.length, batchSize: env.JUDGE_BATCH_SIZE }, '[reconcile] judging');
@@ -122,15 +145,114 @@ export async function reconcileOffer(offerId: number): Promise<void> {
     rawDecisions.push(...br.decisions);
   }
 
-  const resolved = resolveConflicts(rawDecisions);
-  log.info({ decisions: resolved.length }, '[reconcile] conflicts resolved');
+  const forwardBreakdown = {
+    total: rawDecisions.length,
+    match: rawDecisions.filter((d) => d.relation === 'match').length,
+    partial: rawDecisions.filter((d) => d.relation === 'partial_quantity').length,
+    extra: rawDecisions.filter((d) => d.relation === 'extra').length,
+    lowConfidence: rawDecisions.filter((d) => d.relation === 'low_confidence').length,
+  };
+  log.info(forwardBreakdown, '[reconcile] forward judge raw decisions');
+
+  const extrasDecisions = rawDecisions.filter((d) => d.relation === 'extra');
+  if (extrasDecisions.length > 0) {
+    log.info(
+      {
+        count: extrasDecisions.length,
+        examples: extrasDecisions.slice(0, 10).map((d) => {
+          const offerItem = offerById.get(d.offerItemId);
+          const top = shortlists.get(d.offerItemId)?.slice(0, 3) ?? [];
+          return {
+            offered: offerItem?.description.slice(0, 60),
+            top3Candidates: top.map((c) => ({
+              req: requestById.get(c.id)?.description.slice(0, 50),
+              sim: Number(c.similarity.toFixed(3)),
+            })),
+            rationale: d.rationale.slice(0, 80),
+          };
+        }),
+      },
+      '[reconcile] EXTRAS post-forward — judge dijo extra teniendo estos candidatos',
+    );
+  }
+
+  let resolved = resolveConflicts(rawDecisions);
+  log.info({ decisions: resolved.length }, '[reconcile] conflicts resolved (forward)');
+
+  const initialAssigned = new Set(
+    resolved
+      .filter((d) => d.requestItemId !== null && d.relation !== 'extra')
+      .map((d) => d.requestItemId as number),
+  );
+
+  const unassignedRequests: ReverseRequestItem[] = offer.request.items
+    .filter((it) => !initialAssigned.has(it.id))
+    .map((it) => {
+      const emb = reqEmbed.embeddings.find((e) => e.id === it.id);
+      return {
+        id: it.id,
+        description: it.description,
+        unit: it.unit,
+        quantity: Number(it.quantity),
+        vector: emb?.vector ?? [],
+      };
+    })
+    .filter((r) => r.vector.length > 0);
+
+  const extraOfferIds = new Set(
+    resolved.filter((d) => d.relation === 'extra').map((d) => d.offerItemId),
+  );
+  const extras: ReverseExtraItem[] = offer.items
+    .filter((it) => extraOfferIds.has(it.id))
+    .map((it) => {
+      const emb = offerEmbed.embeddings.find((e) => e.id === it.id);
+      return {
+        offerItemId: it.id,
+        description: it.description,
+        unit: it.unit,
+        quantity: it.quantity !== null ? Number(it.quantity) : null,
+        vector: emb?.vector ?? [],
+      };
+    })
+    .filter((e) => e.vector.length > 0);
+
+  log.info(
+    { unassigned: unassignedRequests.length, extras: extras.length },
+    '[reconcile] running reverse pass',
+  );
+
+  const reverseResult = await runReversePass({
+    unassignedRequests,
+    extras,
+    offerId,
+  });
+  totals.promptTokens += reverseResult.promptTokens;
+  totals.completionTokens += reverseResult.completionTokens;
+  totals.costUsd += reverseResult.costUsd;
+
+  const recoverySimilarityByOfferId = new Map<number, number>();
+  if (reverseResult.recoveries.length > 0) {
+    resolved = applyRecoveries(resolved, reverseResult.recoveries);
+    for (const r of reverseResult.recoveries) {
+      recoverySimilarityByOfferId.set(r.offerItemId, r.similarity);
+    }
+    log.info(
+      {
+        recovered: reverseResult.recoveries.length,
+        examples: reverseResult.recoveries.slice(0, 5).map((r) => ({
+          offerItemId: r.offerItemId,
+          requestItemId: r.requestItemId,
+          relation: r.relation,
+          similarity: Number(r.similarity.toFixed(3)),
+        })),
+      },
+      '[reconcile] reverse pass recovered matches',
+    );
+  }
 
   const assignedRequestIds = new Set(
     resolved
-      .filter(
-        (d) =>
-          d.requestItemId !== null && (d.relation === 'match' || d.relation === 'partial_quantity'),
-      )
+      .filter((d) => d.requestItemId !== null && d.relation !== 'extra')
       .map((d) => d.requestItemId as number),
   );
 
@@ -151,7 +273,12 @@ export async function reconcileOffer(offerId: number): Promise<void> {
   const offerLines: Prisma.ReconciliationLineCreateManyInput[] = resolved.map((d) => {
     const offerItem = offerById.get(d.offerItemId)!;
     const requestItem = d.requestItemId !== null ? requestById.get(d.requestItemId) : undefined;
-    const similarity = lookupSimilarity(shortlists, d.offerItemId, d.requestItemId);
+    const similarity = lookupSimilarity(
+      shortlists,
+      d.offerItemId,
+      d.requestItemId,
+      recoverySimilarityByOfferId,
+    );
     const flags = lookupFlags(d.offerItemId, shortlists, offer, d);
     return {
       reconciliationId: reconciliation.id,
@@ -172,10 +299,7 @@ export async function reconcileOffer(offerId: number): Promise<void> {
     prisma.reconciliation.update({
       where: { id: reconciliation.id },
       data: {
-        itemsCovered: countBy(
-          resolved,
-          (r) => r.relation === 'match' || r.relation === 'partial_quantity',
-        ),
+        itemsCovered: countBy(resolved, (r) => r.relation === 'match'),
         itemsMissing: missingLines.length,
         itemsExtra: countBy(resolved, (r) => r.relation === 'extra'),
         itemsPartial: countBy(resolved, (r) => r.relation === 'partial_quantity'),
@@ -189,16 +313,21 @@ export async function reconcileOffer(offerId: number): Promise<void> {
     prisma.offer.update({ where: { id: offerId }, data: { status: 'RECONCILED' } }),
   ]);
 
+  const summary = {
+    match: countBy(resolved, (r) => r.relation === 'match'),
+    partial: countBy(resolved, (r) => r.relation === 'partial_quantity'),
+    extra: countBy(resolved, (r) => r.relation === 'extra'),
+    lowConfidence: countBy(resolved, (r) => r.relation === 'low_confidence'),
+    missing: missingLines.length,
+    requestItems: offer.request.items.length,
+  };
   log.info(
     {
-      covered: countBy(
-        resolved,
-        (r) => r.relation === 'match' || r.relation === 'partial_quantity',
-      ),
-      missing: missingLines.length,
-      extra: countBy(resolved, (r) => r.relation === 'extra'),
-      lowConfidence: countBy(resolved, (r) => r.relation === 'low_confidence'),
+      ...summary,
+      sumCheck: summary.match + summary.partial + summary.missing,
       costUsd: totals.costUsd,
+      promptTokens: totals.promptTokens,
+      completionTokens: totals.completionTokens,
     },
     '[reconcile] done → RECONCILED',
   );
@@ -345,7 +474,10 @@ function toResolvable(
         qtyRatioMax: env.QTY_RATIO_MAX,
       },
     );
-    if (verifier.shouldDowngradeToLowConfidence) {
+    // Si el LLM confía fuerte, no downgradeamos por similarity baja — el judge vio
+    // el contexto completo y decidió. El flag queda visible en `flags` para revisión.
+    const trustsJudge = decision.confidence >= env.TRUST_JUDGE_CONFIDENCE;
+    if (verifier.shouldDowngradeToLowConfidence && !trustsJudge) {
       relation = 'low_confidence';
     }
   }
@@ -376,10 +508,14 @@ function lookupSimilarity(
   shortlists: Map<number, Candidate[]>,
   offerItemId: number,
   requestItemId: number | null,
+  recoverySimilarityByOfferId?: Map<number, number>,
 ): Prisma.Decimal | null {
   if (requestItemId === null) return null;
   const cand = shortlists.get(offerItemId)?.find((c) => c.id === requestItemId);
-  return cand ? new Prisma.Decimal(cand.similarity.toFixed(3)) : null;
+  if (cand) return new Prisma.Decimal(cand.similarity.toFixed(3));
+  const recovery = recoverySimilarityByOfferId?.get(offerItemId);
+  if (recovery !== undefined) return new Prisma.Decimal(recovery.toFixed(3));
+  return null;
 }
 
 function lookupFlags(
