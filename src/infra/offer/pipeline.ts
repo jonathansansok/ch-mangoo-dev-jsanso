@@ -21,32 +21,53 @@ export interface PipelineArgs {
 }
 
 export async function processOfferPipeline(args: PipelineArgs): Promise<void> {
+  const start = Date.now();
+  const log = logger.child({ offerId: args.offerId, fileName: args.fileName });
+  log.info({ mime: args.mime, sizeKb: (args.buffer.length / 1024).toFixed(1) }, '[pipeline] start');
+
   try {
     if (args.mime !== 'application/pdf') {
+      log.warn({ mime: args.mime }, '[pipeline] unsupported mime, aborting');
       await setOfferStatus(args.offerId, 'FAILED', 'unsupported_mime');
       return;
     }
 
+    log.info('[pipeline] → EXTRACTING');
     await setOfferStatus(args.offerId, 'EXTRACTING');
+
+    const extractStart = Date.now();
     const extracted = await extractPdf({
       buffer: args.buffer,
       fileName: args.fileName,
       mime: args.mime,
       offerId: args.offerId,
     });
+    log.info(
+      {
+        durationMs: Date.now() - extractStart,
+        items: extracted.items.length,
+        fromCache: extracted.meta.fromCache,
+        model: extracted.meta.model,
+        supplier: extracted.header.supplierName,
+      },
+      '[pipeline] extract done',
+    );
 
     try {
+      log.info({ items: extracted.items.length }, '[pipeline] persisting items');
       await persistExtractedOffer(args.offerId, extracted);
+      log.info('[pipeline] persist done');
     } catch (err) {
-      logger.error({ offerId: args.offerId, err }, 'persist failed');
+      log.error({ err }, '[pipeline] persist failed');
       await setOfferStatus(args.offerId, 'FAILED', 'persist_failed');
       return;
     }
 
+    log.info({ totalMs: Date.now() - start }, '[pipeline] → EXTRACTED');
     await setOfferStatus(args.offerId, 'EXTRACTED');
   } catch (err) {
     const reason: PipelineFailureReason = err instanceof PdfExtractError ? err.reason : 'unknown';
-    logger.error({ offerId: args.offerId, reason, err }, 'pipeline failed');
+    log.error({ reason, err }, '[pipeline] failed');
     await setOfferStatus(args.offerId, 'FAILED', reason);
   }
 }

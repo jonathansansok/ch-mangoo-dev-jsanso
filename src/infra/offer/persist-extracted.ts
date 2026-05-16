@@ -1,5 +1,6 @@
 import 'server-only';
 import { prisma } from '@/infra/db/prisma';
+import { logger } from '@/lib/logger';
 import type { ExtractedOfferWithMeta } from '@/core/extract/schema';
 
 export async function persistExtractedOffer(
@@ -7,6 +8,15 @@ export async function persistExtractedOffer(
   extracted: ExtractedOfferWithMeta,
 ): Promise<void> {
   const offerDate = parseDate(extracted.header.offerDate);
+  const log = logger.child({ offerId });
+  log.info(
+    {
+      supplier: extracted.header.supplierName,
+      offerDate: offerDate?.toISOString() ?? null,
+      itemCount: extracted.items.length,
+    },
+    '[persist] start',
+  );
 
   await prisma.$transaction([
     prisma.offer.update({
@@ -32,6 +42,8 @@ export async function persistExtractedOffer(
       })),
     }),
   ]);
+
+  log.info({ itemCount: extracted.items.length }, '[persist] done');
 }
 
 function parseDate(value: string | null): Date | null {
