@@ -13,6 +13,17 @@ async function loadOffer(id: number): Promise<OfferView | null> {
     include: {
       request: { select: { externalId: true, title: true } },
       items: { orderBy: { lineNumber: 'asc' } },
+      reconciliation: {
+        include: {
+          lines: {
+            orderBy: [{ relation: 'asc' }, { id: 'asc' }],
+            include: {
+              offerItem: { select: { lineNumber: true, description: true, supplierCode: true } },
+              requestItem: { select: { externalItemId: true, description: true, unit: true } },
+            },
+          },
+        },
+      },
     },
   });
   if (!offer) return null;
@@ -38,7 +49,49 @@ async function loadOffer(id: number): Promise<OfferView | null> {
       currency: i.currency,
       unit: i.unit,
     })),
+    reconciliation: offer.reconciliation
+      ? {
+          id: offer.reconciliation.id,
+          itemsCovered: offer.reconciliation.itemsCovered,
+          itemsMissing: offer.reconciliation.itemsMissing,
+          itemsExtra: offer.reconciliation.itemsExtra,
+          itemsPartial: offer.reconciliation.itemsPartial,
+          itemsLowConfidence: offer.reconciliation.itemsLowConfidence,
+          totalCostUsd: offer.reconciliation.totalCostUsd.toString(),
+          completedAt: offer.reconciliation.completedAt,
+          lines: offer.reconciliation.lines.map((l) => ({
+            id: l.id,
+            relation: l.relation,
+            confidence: l.confidence.toString(),
+            embeddingSimilarity: l.embeddingSimilarity?.toString() ?? null,
+            quantityRequested: l.quantityRequested?.toString() ?? null,
+            quantityOffered: l.quantityOffered?.toString() ?? null,
+            rationale: l.rationale,
+            flags: extractFlags(l.flags),
+            offerItem: l.offerItem
+              ? {
+                  lineNumber: l.offerItem.lineNumber,
+                  description: l.offerItem.description,
+                  supplierCode: l.offerItem.supplierCode,
+                }
+              : null,
+            requestItem: l.requestItem
+              ? {
+                  externalItemId: l.requestItem.externalItemId,
+                  description: l.requestItem.description,
+                  unit: l.requestItem.unit,
+                }
+              : null,
+          })),
+        }
+      : null,
   };
+}
+
+function extractFlags(flags: unknown): string[] {
+  if (!flags || typeof flags !== 'object') return [];
+  const f = flags as { flags?: unknown };
+  return Array.isArray(f.flags) ? (f.flags as string[]) : [];
 }
 
 interface PageProps {

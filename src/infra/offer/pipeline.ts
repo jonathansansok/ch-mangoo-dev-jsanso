@@ -1,5 +1,6 @@
 import 'server-only';
 import { extractPdf, PdfExtractError } from '@/infra/extract/pdf-service';
+import { reconcileOffer, ReconcileError } from '@/infra/reconcile/reconcile-service';
 import { logger } from '@/lib/logger';
 import { persistExtractedOffer } from './persist-extracted';
 import { setOfferStatus } from './status';
@@ -11,6 +12,9 @@ export type PipelineFailureReason =
   | 'schema_validation_failed'
   | 'persist_failed'
   | 'unsupported_mime'
+  | 'no_offer_items'
+  | 'request_has_no_items'
+  | 'reconcile_failed'
   | 'unknown';
 
 export interface PipelineArgs {
@@ -63,8 +67,25 @@ export async function processOfferPipeline(args: PipelineArgs): Promise<void> {
       return;
     }
 
-    log.info({ totalMs: Date.now() - start }, '[pipeline] → EXTRACTED');
+    log.info({ extractMs: Date.now() - start }, '[pipeline] → EXTRACTED');
     await setOfferStatus(args.offerId, 'EXTRACTED');
+
+    try {
+      log.info('[pipeline] → RECONCILING');
+      const reconcileStart = Date.now();
+      await reconcileOffer(args.offerId);
+      log.info({ reconcileMs: Date.now() - reconcileStart }, '[pipeline] reconcile done');
+    } catch (err) {
+      const reason: PipelineFailureReason =
+        err instanceof ReconcileError
+          ? ((err.reason as PipelineFailureReason) ?? 'reconcile_failed')
+          : 'reconcile_failed';
+      log.error({ reason, err }, '[pipeline] reconcile failed');
+      await setOfferStatus(args.offerId, 'FAILED', reason);
+      return;
+    }
+
+    log.info({ totalMs: Date.now() - start }, '[pipeline] → RECONCILED (done)');
   } catch (err) {
     const reason: PipelineFailureReason = err instanceof PdfExtractError ? err.reason : 'unknown';
     log.error({ reason, err }, '[pipeline] failed');

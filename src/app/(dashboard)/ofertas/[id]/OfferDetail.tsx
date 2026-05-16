@@ -6,6 +6,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { StatCard } from '@/components/cards/StatCard';
 import { formatPrice, formatQty, formatDateLong } from '@/lib/format';
 import type { OfferView } from './types';
+import { ReconciliationSection } from './ReconciliationSection';
 
 const TERMINAL: ReadonlyArray<OfferStatus> = ['EXTRACTED', 'RECONCILED', 'FAILED'];
 
@@ -126,6 +127,8 @@ export function OfferDetail({ offer }: { offer: OfferView }) {
           </table>
         )}
       </div>
+
+      {offer.reconciliation && <ReconciliationSection reconciliation={offer.reconciliation} />}
     </>
   );
 }

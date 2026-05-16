@@ -23,7 +23,21 @@ vi.mock('./status', () => ({
   setOfferStatus: vi.fn(),
 }));
 
+vi.mock('@/infra/reconcile/reconcile-service', () => {
+  class ReconcileError extends Error {
+    constructor(
+      message: string,
+      public reason: string,
+    ) {
+      super(message);
+      this.name = 'ReconcileError';
+    }
+  }
+  return { reconcileOffer: vi.fn(), ReconcileError };
+});
+
 import { extractPdf, PdfExtractError } from '@/infra/extract/pdf-service';
+import { reconcileOffer } from '@/infra/reconcile/reconcile-service';
 import { persistExtractedOffer } from './persist-extracted';
 import { setOfferStatus } from './status';
 import { processOfferPipeline } from './pipeline';
@@ -31,6 +45,7 @@ import { processOfferPipeline } from './pipeline';
 const extractMock = vi.mocked(extractPdf);
 const persistMock = vi.mocked(persistExtractedOffer);
 const setStatusMock = vi.mocked(setOfferStatus);
+const reconcileMock = vi.mocked(reconcileOffer);
 
 const baseArgs = {
   offerId: 42,
@@ -61,15 +76,17 @@ function makeExtracted() {
 describe('processOfferPipeline', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('happy path: EXTRACTING → EXTRACTED', async () => {
+  it('happy path: EXTRACTING → EXTRACTED → reconcile', async () => {
     extractMock.mockResolvedValue(makeExtracted());
     persistMock.mockResolvedValue();
     setStatusMock.mockResolvedValue();
+    reconcileMock.mockResolvedValue();
 
     await processOfferPipeline(baseArgs);
 
     expect(setStatusMock.mock.calls.map((c) => c[1])).toEqual(['EXTRACTING', 'EXTRACTED']);
     expect(persistMock).toHaveBeenCalledTimes(1);
+    expect(reconcileMock).toHaveBeenCalledWith(42);
   });
 
   it('mime no soportado → FAILED unsupported_mime sin extract', async () => {
