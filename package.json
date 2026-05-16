@@ -1,0 +1,99 @@
+{
+  "name": "challenge-ok",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,css,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css,yml,yaml}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --dir src",
+    "test:integration": "vitest run --dir tests/integration",
+    "test:e2e": "vitest run --dir tests/e2e",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:studio": "prisma studio",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@prisma/client": "^6.0.0",
+    "@tanstack/react-query": "^5.90.0",
+    "lucide-react": "^0.469.0",
+    "marked": "^17.0.0",
+    "next": "^15.0.0",
+    "openai": "^4.78.0",
+    "p-limit": "^6.2.0",
+    "p-retry": "^7.0.0",
+    "pdf-parse": "^1.1.1",
+    "pino": "^10.0.0",
+    "pino-pretty": "^11.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.55.0",
+    "server-only": "^0.0.1",
+    "sonner": "^2.0.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/eslintrc": "^3.3.5",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.0.0",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "csv-parse": "^5.6.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.0.0",
+    "happy-dom": "^16.0.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^16.0.0",
+    "msw": "^2.7.0",
+    "prettier": "^3.4.0",
+    "prettier-plugin-tailwindcss": "^0.6.0",
+    "prisma": "^6.0.0",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "prisma": {
+    "seed": "tsx scripts/seed.ts"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "msw",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
+  }
+}

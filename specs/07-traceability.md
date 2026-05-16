@@ -64,12 +64,15 @@ Tabla de precios versionada en `lib/openai-pricing.ts` (USD por 1M tokens). Fuen
 
 ```ts
 const PRICING = {
-  'gpt-4o-mini':              { input: 0.150, output: 0.600 },
-  'gpt-4o':                   { input: 2.500, output: 10.000 },
-  'text-embedding-3-small':   { input: 0.020, output: 0 },
+  'gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'gpt-4o': { input: 2.5, output: 10.0 },
+  'text-embedding-3-small': { input: 0.02, output: 0 },
 } as const;
 
-function estimateCost(model: string, usage: { prompt_tokens: number; completion_tokens: number }): number {
+function estimateCost(
+  model: string,
+  usage: { prompt_tokens: number; completion_tokens: number },
+): number {
   const p = PRICING[model];
   if (!p) return 0;
   return (usage.prompt_tokens * p.input + usage.completion_tokens * p.output) / 1_000_000;

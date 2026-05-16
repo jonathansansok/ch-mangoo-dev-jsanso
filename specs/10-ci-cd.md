@@ -179,7 +179,7 @@ name: E2E
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 4 * * *'   # 04:00 UTC diario
+    - cron: '0 4 * * *' # 04:00 UTC diario
 
 jobs:
   e2e:
@@ -231,25 +231,25 @@ Variables por PR environment: las mismas que prod, pero apuntando a su DB efíme
 ```yaml
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'weekly'
+      day: 'monday'
     open-pull-requests-limit: 5
     groups:
       prisma:
-        patterns: ["@prisma/*", "prisma"]
+        patterns: ['@prisma/*', 'prisma']
       tanstack:
-        patterns: ["@tanstack/*"]
+        patterns: ['@tanstack/*']
       types:
-        patterns: ["@types/*"]
-        dependency-type: "development"
+        patterns: ['@types/*']
+        dependency-type: 'development'
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
 ```
 
 Agrupado para reducir ruido de PRs sueltas.
@@ -298,31 +298,31 @@ Configurar en GitHub settings:
 
 ## Secrets en GitHub
 
-| Secret | Uso |
-|---|---|
-| `RAILWAY_TOKEN` | Deploy a Railway. Project token. |
+| Secret               | Uso                                             |
+| -------------------- | ----------------------------------------------- |
+| `RAILWAY_TOKEN`      | Deploy a Railway. Project token.                |
 | `OPENAI_API_KEY_E2E` | Tests e2e con OpenAI real. Key con límite bajo. |
 
 Variables públicas (no secrets):
 
-| Var | Valor |
-|---|---|
-| `NODE_VERSION` | `22` |
+| Var            | Valor |
+| -------------- | ----- |
+| `NODE_VERSION` | `22`  |
 
 ## Variables de entorno de Railway
 
 Configuradas en el servicio `app` de Railway:
 
-| Var | Origen |
-|---|---|
-| `DATABASE_URL` | inyectado por plugin MySQL |
-| `OPENAI_API_KEY` | secret manual |
-| `MAX_TOKENS_PER_RUN` | manual, default `100000` |
-| `NODE_ENV` | `production` |
-| `RAILWAY_GIT_COMMIT_SHA` | inyectado por Railway |
-| `MIN_SIMILARITY` | manual, default `0.65` |
-| `JUDGE_BATCH_SIZE` | manual, default `10` |
-| `SHORTLIST_K` | manual, default `5` |
+| Var                      | Origen                     |
+| ------------------------ | -------------------------- |
+| `DATABASE_URL`           | inyectado por plugin MySQL |
+| `OPENAI_API_KEY`         | secret manual              |
+| `MAX_TOKENS_PER_RUN`     | manual, default `100000`   |
+| `NODE_ENV`               | `production`               |
+| `RAILWAY_GIT_COMMIT_SHA` | inyectado por Railway      |
+| `MIN_SIMILARITY`         | manual, default `0.65`     |
+| `JUDGE_BATCH_SIZE`       | manual, default `10`       |
+| `SHORTLIST_K`            | manual, default `5`        |
 
 ## `railway.json` o `nixpacks.toml`
 
@@ -376,7 +376,26 @@ export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'subject-case': [0],
-    'scope-enum': [2, 'always', ['seed', 'db', 'extract', 'reconcile', 'ai', 'ui', 'api', 'infra', 'ci', 'deps', 'docs', 'output', 'trace', 'repo']],
+    'scope-enum': [
+      2,
+      'always',
+      [
+        'seed',
+        'db',
+        'extract',
+        'reconcile',
+        'ai',
+        'ui',
+        'api',
+        'infra',
+        'ci',
+        'deps',
+        'docs',
+        'output',
+        'trace',
+        'repo',
+      ],
+    ],
   },
 };
 ```

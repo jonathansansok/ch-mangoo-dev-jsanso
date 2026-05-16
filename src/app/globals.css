@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+
+:root {
+  --brand-purple: #662f8e;
+  --company-primary: #662f8e;
+  --brand-blue: #3953a3;
+  --text-title: #2f458a;
+  --text-muted: #65758b;
+  --text-soft: #6a7282;
+  --bg-banner: #edebf2;
+  --bg-card: #ffffff;
+  --border-muted: #a9a9a9;
+  --border-soft: #99a1af;
+  --border-light: #d1d5db;
+  --green: #21c45d;
+}
+
+@layer utilities {
+  .scrollbar-hidden {
+    scrollbar-width: none;
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+body {
+  background: #ffffff;
+  color: #171717;
+  font-family:
+    var(--font-inter),
+    Inter,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}

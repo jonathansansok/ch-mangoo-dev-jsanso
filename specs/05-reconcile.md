@@ -103,14 +103,16 @@ Reglas:
 
 ```ts
 const JudgeOutput = z.object({
-  decisions: z.array(z.object({
-    offerItemRef: z.string(),                         // ID local del batch
-    relation: z.enum(['match', 'partial_quantity', 'extra']),
-    requestItemRef: z.string().nullable(),            // ID del candidato elegido o null
-    confidence: z.number().min(0).max(1),
-    rationale_short: z.string().max(280),
-  })),
-})
+  decisions: z.array(
+    z.object({
+      offerItemRef: z.string(), // ID local del batch
+      relation: z.enum(['match', 'partial_quantity', 'extra']),
+      requestItemRef: z.string().nullable(), // ID del candidato elegido o null
+      confidence: z.number().min(0).max(1),
+      rationale_short: z.string().max(280),
+    }),
+  ),
+});
 ```
 
 `offerItemRef` y `requestItemRef` son IDs sintéticos del batch (ej. `O1`, `O2`, `RA`, `RB`) para que el modelo no tenga que memorizar IDs de DB largos. El servicio re-resuelve a IDs reales al persistir. Esto cumple la regla 2 (outputs referenciales cortos).
@@ -236,25 +238,27 @@ async function reconcile(offerId):
 
 ## Configuración (env / constantes)
 
-| Var | Default | Significado |
-|---|---|---|
-| `MIN_SIMILARITY` | 0.65 | Coseno mínimo para mantener match |
-| `SHORTLIST_K` | 5 | Candidatos por offer item |
-| `JUDGE_BATCH_SIZE` | 10 | Items por llamada al judge |
-| `QTY_RATIO_MIN` | 0.1 | Ratio mínimo qty offered/requested para no flagear |
-| `QTY_RATIO_MAX` | 3.0 | Ratio máximo |
-| `MAX_JUDGE_RETRIES` | 2 | Reintentos con feedback ante schema roto |
-| `JUDGE_MODEL` | `gpt-4o-mini` | Modelo del judge |
-| `EMBED_MODEL` | `text-embedding-3-small` | Modelo de embeddings |
+| Var                 | Default                  | Significado                                        |
+| ------------------- | ------------------------ | -------------------------------------------------- |
+| `MIN_SIMILARITY`    | 0.65                     | Coseno mínimo para mantener match                  |
+| `SHORTLIST_K`       | 5                        | Candidatos por offer item                          |
+| `JUDGE_BATCH_SIZE`  | 10                       | Items por llamada al judge                         |
+| `QTY_RATIO_MIN`     | 0.1                      | Ratio mínimo qty offered/requested para no flagear |
+| `QTY_RATIO_MAX`     | 3.0                      | Ratio máximo                                       |
+| `MAX_JUDGE_RETRIES` | 2                        | Reintentos con feedback ante schema roto           |
+| `JUDGE_MODEL`       | `gpt-4o-mini`            | Modelo del judge                                   |
+| `EMBED_MODEL`       | `text-embedding-3-small` | Modelo de embeddings                               |
 
 ## Performance esperada
 
 case-simple (6 items request + ~7 items offer):
+
 - 2 calls embed (~1s).
 - 1 call judge (≤10 items).
 - Total < 5s.
 
 case-complex (220 items request + ~225 items offer):
+
 - 2 calls embed (~2s).
 - 23 calls judge en paralelo con `Promise.all` y límite 5 concurrent (`p-limit`).
 - Total < 30s.

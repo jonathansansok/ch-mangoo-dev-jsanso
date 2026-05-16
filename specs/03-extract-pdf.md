@@ -16,7 +16,7 @@ Tomar un PDF subido por el usuario y devolver una representación estructurada d
 type ExtractedOffer = {
   header: {
     supplierName: string | null;
-    offerDate: string | null;        // ISO 8601 si parseable, null si no
+    offerDate: string | null; // ISO 8601 si parseable, null si no
     observations: string | null;
   };
   items: Array<{
@@ -25,7 +25,7 @@ type ExtractedOffer = {
     description: string;
     quantity: number | null;
     unitPrice: number | null;
-    currency: string | null;          // ISO 4217 o null
+    currency: string | null; // ISO 4217 o null
     unit: string | null;
     rawObservations: string | null;
   }>;
@@ -100,7 +100,7 @@ Sin few-shot. Sin chain-of-thought explícito (response_format estructurado ya f
 ```ts
 const Header = z.object({
   supplierName: z.string().nullable(),
-  offerDate: z.string().nullable(),       // valida ISO en post
+  offerDate: z.string().nullable(), // valida ISO en post
   observations: z.string().nullable(),
 });
 
