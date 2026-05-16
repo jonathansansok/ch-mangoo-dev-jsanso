@@ -3,6 +3,7 @@ name: Smoke test
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: smoke-production
@@ -14,14 +15,17 @@ jobs:
     steps:
       - name: Wait for Railway deploy and hit /api/health
         run: |
-          for i in $(seq 1 30); do
-            if curl -fsSL "${{ vars.RAILWAY_PUBLIC_URL }}/api/health"; then
-              echo ""
+          URL="${{ vars.RAILWAY_PUBLIC_URL }}/api/health"
+          echo "Polling $URL"
+          for i in $(seq 1 60); do
+            RESPONSE=$(curl -sS -o /tmp/body -w "%{http_code}" "$URL" || echo "000")
+            if [ "$RESPONSE" = "200" ] && grep -q '"db":"ok"' /tmp/body; then
               echo "Healthcheck OK (intento $i)"
+              cat /tmp/body
               exit 0
             fi
-            echo "Esperando deploy... intento $i/30"
+            echo "intento $i/60 → http=$RESPONSE body=$(cat /tmp/body 2>/dev/null | head -c 80)"
             sleep 10
           done
-          echo "Healthcheck fallido tras 5min"
+          echo "Healthcheck fallido tras 10min"
           exit 1
