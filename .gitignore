@@ -45,6 +45,10 @@ prisma/migrations/dev.db*
 coverage/
 .nyc_output/
 
+# Scratch dumps fuera de tests/integration
+tests/*.txt
+tests/excel*
+
 # IDE
 .vscode/
 .idea/
