@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    groups:
+      prisma:
+        patterns:
+          - '@prisma/*'
+          - 'prisma'
+      tanstack:
+        patterns:
+          - '@tanstack/*'
+      types:
+        patterns:
+          - '@types/*'
+        dependency-type: 'development'
+      eslint:
+        patterns:
+          - 'eslint*'
+          - '@eslint/*'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
