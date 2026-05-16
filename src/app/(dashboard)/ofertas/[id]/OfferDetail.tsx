@@ -1,19 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import type { Offer, OfferItem, OfferStatus } from '@prisma/client';
+import type { OfferStatus } from '@prisma/client';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { StatCard } from '@/components/cards/StatCard';
 import { formatPrice, formatQty, formatDateLong } from '@/lib/format';
+import type { OfferView } from './types';
 
 const TERMINAL: ReadonlyArray<OfferStatus> = ['EXTRACTED', 'RECONCILED', 'FAILED'];
-
-interface OfferDetailProps {
-  offer: Offer & {
-    request: { externalId: string; title: string };
-    items: OfferItem[];
-  };
-}
 
 interface StatusResponse {
   id: number;
@@ -22,7 +16,7 @@ interface StatusResponse {
   updatedAt: string;
 }
 
-export function OfferDetail({ offer }: OfferDetailProps) {
+export function OfferDetail({ offer }: { offer: OfferView }) {
   const { data: live } = useQuery<StatusResponse>({
     queryKey: ['offer-status', offer.id],
     queryFn: async () => {
@@ -120,11 +114,11 @@ export function OfferDetail({ offer }: OfferDetailProps) {
                   </td>
                   <td className="px-4 py-3 text-sm text-[#1f2937]">{item.description}</td>
                   <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
-                    {formatQty(item.quantity?.toString() ?? null)}
+                    {formatQty(item.quantity)}
                   </td>
                   <td className="px-4 py-3 text-sm text-[#6a7282]">{item.unit ?? '—'}</td>
                   <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
-                    {formatPrice(item.unitPrice?.toString() ?? null, item.currency)}
+                    {formatPrice(item.unitPrice, item.currency)}
                   </td>
                 </tr>
               ))}
