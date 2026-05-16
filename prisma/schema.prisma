@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model PurchaseRequest {
+  id         Int                   @id @default(autoincrement())
+  externalId String                @unique @db.VarChar(64)
+  title      String                @db.VarChar(255)
+  createdAt  DateTime              @default(now())
+  items      PurchaseRequestItem[]
+  offers     Offer[]
+
+  @@index([externalId])
+}
+
+model PurchaseRequestItem {
+  id                  Int                  @id @default(autoincrement())
+  requestId           Int
+  externalItemId      Int
+  description         String               @db.VarChar(500)
+  quantity            Decimal              @db.Decimal(14, 3)
+  unit                String               @db.VarChar(64)
+  createdAt           DateTime             @default(now())
+  request             PurchaseRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reconciliationLines ReconciliationLine[]
+
+  @@unique([requestId, externalItemId])
+  @@index([requestId])
+}
+
+enum OfferStatus {
+  PENDING
+  EXTRACTING
+  EXTRACTED
+  RECONCILING
+  RECONCILED
+  FAILED
+}
+
+model Offer {
+  id             Int             @id @default(autoincrement())
+  requestId      Int
+  supplierName   String?         @db.VarChar(255)
+  offerDate      DateTime?
+  sourceFile     String          @db.VarChar(500)
+  sourceFileHash String          @unique @db.VarChar(64)
+  sourceFileMime String          @db.VarChar(128)
+  observations   String?         @db.Text
+  status         OfferStatus     @default(PENDING)
+  failureReason  String?         @db.VarChar(500)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  request        PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  items          OfferItem[]
+  reconciliation Reconciliation?
+  decisionLogs   DecisionLog[]
+
+  @@index([requestId])
+  @@index([sourceFileHash])
+  @@index([status])
+}
+
+model OfferItem {
+  id                  Int                  @id @default(autoincrement())
+  offerId             Int
+  lineNumber          Int
+  supplierCode        String?              @db.VarChar(64)
+  description         String               @db.VarChar(500)
+  quantity            Decimal?             @db.Decimal(14, 3)
+  unitPrice           Decimal?             @db.Decimal(14, 4)
+  currency            String?              @db.VarChar(8)
+  unit                String?              @db.VarChar(64)
+  rawObservations     String?              @db.Text
+  createdAt           DateTime             @default(now())
+  offer               Offer                @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  reconciliationLines ReconciliationLine[]
+
+  @@unique([offerId, lineNumber])
+  @@index([offerId])
+}
+
+model Reconciliation {
+  id                    Int                  @id @default(autoincrement())
+  offerId               Int                  @unique
+  requestId             Int
+  summary               String?              @db.LongText
+  itemsCovered          Int                  @default(0)
+  itemsMissing          Int                  @default(0)
+  itemsExtra            Int                  @default(0)
+  itemsPartial          Int                  @default(0)
+  itemsLowConfidence    Int                  @default(0)
+  totalPromptTokens     Int                  @default(0)
+  totalCompletionTokens Int                  @default(0)
+  totalCostUsd          Decimal              @default(0) @db.Decimal(10, 6)
+  createdAt             DateTime             @default(now())
+  completedAt           DateTime?
+  offer                 Offer                @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  lines                 ReconciliationLine[]
+
+  @@index([requestId])
+}
+
+enum LineRelation {
+  MATCH
+  PARTIAL_QUANTITY
+  MISSING_FROM_OFFER
+  EXTRA
+  LOW_CONFIDENCE
+}
+
+model ReconciliationLine {
+  id                  Int                  @id @default(autoincrement())
+  reconciliationId    Int
+  offerItemId         Int?
+  requestItemId       Int?
+  relation            LineRelation
+  confidence          Decimal              @db.Decimal(4, 3)
+  embeddingSimilarity Decimal?             @db.Decimal(4, 3)
+  quantityRequested   Decimal?             @db.Decimal(14, 3)
+  quantityOffered     Decimal?             @db.Decimal(14, 3)
+  rationale           String               @db.VarChar(500)
+  flags               Json?
+  createdAt           DateTime             @default(now())
+  reconciliation      Reconciliation       @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  offerItem           OfferItem?           @relation(fields: [offerItemId], references: [id], onDelete: SetNull)
+  requestItem         PurchaseRequestItem? @relation(fields: [requestItemId], references: [id], onDelete: SetNull)
+  decisionLogs        DecisionLog[]
+
+  @@index([reconciliationId])
+  @@index([offerItemId])
+  @@index([requestItemId])
+  @@index([relation])
+}
+
+enum DecisionKind {
+  EXTRACT_HEADER
+  EXTRACT_ITEMS
+  EMBED_REQUEST
+  EMBED_OFFER
+  JUDGE_BATCH
+}
+
+model DecisionLog {
+  id                   BigInt              @id @default(autoincrement())
+  offerId              Int?
+  reconciliationLineId Int?
+  kind                 DecisionKind
+  model                String              @db.VarChar(64)
+  promptTokens         Int                 @default(0)
+  completionTokens     Int                 @default(0)
+  costUsd              Decimal             @default(0) @db.Decimal(10, 6)
+  prompt               String              @db.LongText
+  rawResponse          String              @db.LongText
+  candidatesConsidered Json?
+  durationMs           Int                 @default(0)
+  createdAt            DateTime            @default(now())
+  offer                Offer?              @relation(fields: [offerId], references: [id], onDelete: SetNull)
+  reconciliationLine   ReconciliationLine? @relation(fields: [reconciliationLineId], references: [id], onDelete: SetNull)
+
+  @@index([offerId])
+  @@index([kind, createdAt])
+}
+
+model ExtractionCache {
+  id        Int      @id @default(autoincrement())
+  fileHash  String   @unique @db.VarChar(64)
+  fileName  String   @db.VarChar(500)
+  mime      String   @db.VarChar(128)
+  payload   Json
+  model     String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@index([fileHash])
+}
