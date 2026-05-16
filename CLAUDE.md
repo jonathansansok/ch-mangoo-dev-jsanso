@@ -90,6 +90,19 @@ Esto se entrega a evaluadores. El código tiene que verse escrito por una person
 - Sin TODO/FIXME huérfanos. Si no se hace, no se escribe.
 - Nombres idiomáticos del stack. `parseOffer` antes que `parseAndExtractSupplierOfferFromFile`.
 
+## Railway deploy — no romper
+
+App live en Railway con auto-deploy en `main`. Stack de infra que NO se toca sin entender consecuencias:
+
+- **`railway.json`**: `startCommand` corre `prisma migrate deploy && pnpm db:seed && pnpm start`. Sin esto la DB queda vacía y `/home` crashea (Prisma P2021).
+- **Builder**: Railway usa Railpack 0.23.0, NO Nixpacks. `nixpacks.toml` es ignorado, no agregarlo de vuelta. Toda customización de start va en `railway.json`.
+- **Plugin MySQL**: expone `MYSQL_URL`, no `DATABASE_URL`. La var `DATABASE_URL` del service app es una referencia: `${{MySQL.MYSQL_URL}}`. Si se rompe la ref, app no levanta.
+- **NODE_ENV**: tiene que ser lowercase (`production`), schema Zod en `src/env.ts` rechaza uppercase.
+- **Servicio Railway** se llama `innovative-reflection` (no `app`). Workflow `.github/workflows/deploy.yml` referencia este nombre. Si se renombra el service, actualizar el workflow.
+- **Healthcheck**: `/api/health` con timeout 120s en `railway.json`. Si se modifica la ruta o se rompe el endpoint, deploys quedan marcados como failed aunque la app esté arriba.
+
+Antes de tocar `railway.json`, `nixpacks.toml`, `.github/workflows/deploy.yml`, vars de Railway, o `src/env.ts`: revisar este bloque y avisar.
+
 ## Convención de ramas y commits
 
 Híbrido: Conventional Branch para ramas + Conventional Commits con scope para mensajes.

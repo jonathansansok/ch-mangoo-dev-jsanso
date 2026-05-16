@@ -20,7 +20,7 @@ jobs:
       - name: Deploy app
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service app --detach
+        run: railway up --service innovative-reflection --detach
 
       - name: Smoke test /api/health
         run: |
