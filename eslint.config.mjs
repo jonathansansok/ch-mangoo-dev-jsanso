@@ -17,6 +17,12 @@ const config = [
     },
   },
   {
+    files: ['scripts/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     ignores: [
       '.next/**',
       'node_modules/**',
