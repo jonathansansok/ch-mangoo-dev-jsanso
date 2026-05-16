@@ -1,0 +1,36 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: curl -fsSL https://railway.app/install.sh | sh
+
+      - name: Deploy app
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service app --detach
+
+      - name: Smoke test /api/health
+        run: |
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl -fsSL "${{ vars.RAILWAY_PUBLIC_URL }}/api/health"; then
+              echo "Healthcheck OK"
+              exit 0
+            fi
+            echo "Esperando deploy... intento $i"
+            sleep 10
+          done
+          echo "Healthcheck fallido tras 100s"
+          exit 1

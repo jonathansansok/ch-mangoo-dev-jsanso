@@ -1,5 +1,9 @@
 # challenge-ok
 
+[![CI](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/ci.yml)
+[![Deploy](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/deploy.yml/badge.svg)](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/deploy.yml)
+![Node](https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white)
+
 Procesa ofertas de proveedor (PDF/XLSX) y las concilia contra solicitudes de compra cargadas en DB. La oferta no comparte IDs con la solicitud ni copia las descripciones, así que la conciliación es semántica.
 
 Challenge técnico de Esolbay. El spec completo está en `docs/challenge.pdf` y los datos de prueba en `fixtures/scenarios/`.

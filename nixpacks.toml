@@ -8,4 +8,4 @@ cmds = ['pnpm install --frozen-lockfile']
 cmds = ['pnpm prisma generate', 'pnpm build']
 
 [start]
-cmd = 'pnpm start'
+cmd = 'pnpm prisma migrate deploy && pnpm start'
