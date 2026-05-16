@@ -32,6 +32,7 @@ Slugify con `slugify` lib o regex propio (lowercase, strip accents, espacios →
 # Conciliación de oferta — {supplierName}
 
 ## Resumen
+
 - **Solicitud:** {externalIdSolicitud} — {titleSolicitud}
 - **Proveedor:** {supplierName ?? '(no identificado)'}
 - **Archivo origen:** `{sourceFile}`
@@ -40,21 +41,23 @@ Slugify con `slugify` lib o regex propio (lowercase, strip accents, espacios →
 - **Estado:** Conciliada
 
 ## Indicadores
-| Métrica | Valor |
-|---|---:|
-| Items pedidos | {totalRequest} |
+
+| Métrica                             |                     Valor |
+| ----------------------------------- | ------------------------: |
+| Items pedidos                       |            {totalRequest} |
 | Items cubiertos (match + parciales) | {covered} ({coveredPct}%) |
-| Items con cantidad parcial | {partial} |
-| Items faltantes | {missing} |
-| Items sobrantes en la oferta | {extra} |
-| Items con baja confianza | {lowConfidence} |
+| Items con cantidad parcial          |                 {partial} |
+| Items faltantes                     |                 {missing} |
+| Items sobrantes en la oferta        |                   {extra} |
+| Items con baja confianza            |           {lowConfidence} |
 
 {observationsBlock}
 
 ## Items conciliados
 
-| # | Pedido | Ofertado | Cant. pedida | Cant. ofertada | Unidad | Precio unit. | Relación | Justificación |
-|---:|---|---|---:|---:|---|---:|---|---|
+|   # | Pedido | Ofertado | Cant. pedida | Cant. ofertada | Unidad | Precio unit. | Relación | Justificación |
+| --: | ------ | -------- | -----------: | -------------: | ------ | -----------: | -------- | ------------- |
+
 {rowsMatchedAndPartial}
 
 ## Items faltantes
@@ -136,6 +139,7 @@ Ordenadas por `lineNumber` del offer item para `match`/`partial_quantity`. Por `
 ```
 
 `relationLabel`:
+
 - `match` → `✓ Coincide`
 - `partial_quantity` → `~ Cant. parcial`
 - `low_confidence` → `? Baja confianza`
@@ -222,6 +226,7 @@ await prisma.reconciliation.update({
 ```
 
 Se persiste para:
+
 - Descarga rápida sin recomputar.
 - Auditoría: si se cambia la conciliación, el summary anterior queda histórico (versionarlo es out of scope; por ahora sobrescribe).
 
@@ -240,7 +245,7 @@ En `/ofertas/[id]` tab "Resumen Markdown":
 
 - **`Reconciliation` sin lines**: render con todas las tablas en estado "vacío" + warning prominente al inicio. Eso indica que algo falló silenciosamente.
 - **`Offer.supplierName = null`**: el header dice `Proveedor: (no identificado)`. El filename usa `sin-proveedor` como slug.
-- **Descripción con caracteres Markdown crudos** (`|`, `*`, `_`, ``` ` ```): escapar en el render de tablas. `|` se vuelve `\|`. El resto Markdown lo tolera en celdas.
+- **Descripción con caracteres Markdown crudos** (`|`, `*`, `_`, `` ` ``): escapar en el render de tablas. `|` se vuelve `\|`. El resto Markdown lo tolera en celdas.
 - **Saltos de línea en `observations` u `rationale`**: en celdas de tabla, reemplazar `\n` por espacio. En sección de observaciones libre, preservar saltos.
 - **Costo USD < $0,0001**: render como `< US$ 0,0001` en lugar de `US$ 0,0000`. Honestidad sobre la magnitud.
 - **`completedAt` null** (conciliación en curso): el render no debería ejecutarse en ese estado. Si pasa, fallar explícito.

@@ -143,7 +143,7 @@ export default defineConfig({
     environment: 'node',
     globals: false,
     setupFiles: ['./vitest.setup.ts'],
-    pool: 'forks',                  // aislar tests con DB
+    pool: 'forks', // aislar tests con DB
     poolOptions: { forks: { singleFork: true } },
     coverage: {
       provider: 'v8',
@@ -151,7 +151,7 @@ export default defineConfig({
       exclude: ['**/*.d.ts', '**/types.ts'],
       reporter: ['text', 'html'],
     },
-    testTimeout: 20_000,            // generoso para integration
+    testTimeout: 20_000, // generoso para integration
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
@@ -235,11 +235,11 @@ Jobs:
 
 ```yaml
 jobs:
-  lint:      runs eslint + prettier check
+  lint: runs eslint + prettier check
   typecheck: runs tsc --noEmit
-  test:      runs vitest (unit + integration)
-  build:     runs next build
-  test-e2e:  runs vitest --grep "e2e" with OPENAI_API_KEY secret (manual trigger)
+  test: runs vitest (unit + integration)
+  build: runs next build
+  test-e2e: runs vitest --grep "e2e" with OPENAI_API_KEY secret (manual trigger)
 ```
 
 Cache: `pnpm-lock.yaml` hash + `.next/cache`.

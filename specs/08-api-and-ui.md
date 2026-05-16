@@ -62,7 +62,7 @@ Ubicación: `app/(dashboard)/ofertas/actions.ts` y similares por feature. Todas 
 
 const UploadOfferSchema = z.object({
   requestId: z.coerce.number().int().positive(),
-  file: z.instanceof(File).refine(f => f.size > 0 && f.size < 10 * 1024 * 1024, "Tamaño 1B-10MB"),
+  file: z.instanceof(File).refine((f) => f.size > 0 && f.size < 10 * 1024 * 1024, 'Tamaño 1B-10MB'),
 });
 
 export async function uploadOffer(formData: FormData) {
@@ -165,7 +165,7 @@ Cliente usa `useQuery` con `refetchInterval` mientras el estado no sea terminal:
 ```tsx
 const { data: offer } = useQuery({
   queryKey: ['offer', offerId],
-  queryFn: () => fetch(`/api/ofertas/${offerId}/status`).then(r => r.json()),
+  queryFn: () => fetch(`/api/ofertas/${offerId}/status`).then((r) => r.json()),
   refetchInterval: (data) => {
     const terminal = ['RECONCILED', 'FAILED'];
     return data && terminal.includes(data.status) ? false : 2000;
@@ -203,12 +203,14 @@ export default async function HomePage() {
 `HomeView` es Client Component si tiene interactividad (filtros, hover). Si solo muestra → Server.
 
 KPIs:
+
 1. Solicitudes activas.
 2. Ofertas procesadas (status `RECONCILED`).
 3. Items conciliados (lines con `match` o `partial_quantity`).
 4. Cobertura promedio % = avg de `(itemsCovered / totalRequestItems)` por oferta.
 
 Cards inferiores:
+
 - "Ofertas recientes": tabla con últimas 5, columnas: proveedor, solicitud, fecha, estado pill.
 - "Distribución de conciliaciones": donut con totales de match/partial/missing/extra.
 
@@ -239,7 +241,9 @@ return (
   <form action={uploadOffer}>
     <RequestSelector name="requestId" />
     <UploadZone name="file" accept=".pdf,.xlsx,.xls" maxSize={10 * 1024 * 1024} />
-    <Button type="submit" loading={form.formState.isSubmitting}>Procesar</Button>
+    <Button type="submit" loading={form.formState.isSubmitting}>
+      Procesar
+    </Button>
   </form>
 );
 ```
@@ -270,7 +274,11 @@ return (
   <>
     <OfferHeader offer={offer} />
     <KPIRow reconciliation={offer.reconciliation} />
-    <TabBar tabs={['oferta', 'conciliacion', 'resumen', 'trazabilidad']} value={tab} onChange={setTab} />
+    <TabBar
+      tabs={['oferta', 'conciliacion', 'resumen', 'trazabilidad']}
+      value={tab}
+      onChange={setTab}
+    />
     {tab === 'oferta' && <OfferItemsTab offer={offer} />}
     {tab === 'conciliacion' && <ReconciliationTab reconciliation={offer.reconciliation} />}
     {tab === 'resumen' && <SummaryTab reconciliation={offer.reconciliation} />}
@@ -285,10 +293,14 @@ Tabs persisten en URL con `?tab=` para que recargar mantenga el contexto.
 
 ```tsx
 <div>
-  <div className="flex gap-2 mb-4">
+  <div className="mb-4 flex gap-2">
     <Button onClick={download}>Descargar .md</Button>
-    <Button variant="secondary" onClick={copy}>Copiar</Button>
-    <Button variant="secondary" onClick={regenerate}>Regenerar</Button>
+    <Button variant="secondary" onClick={copy}>
+      Copiar
+    </Button>
+    <Button variant="secondary" onClick={regenerate}>
+      Regenerar
+    </Button>
   </div>
   <MarkdownViewer source={reconciliation.summary} />
 </div>
@@ -364,9 +376,7 @@ Por ruta dinámica relevante. Render con `ui-style.md`:
 ```tsx
 'use client';
 export default function Error({ error, reset }: { error: Error; reset: () => void }) {
-  return (
-    <ErrorView title="Algo salió mal" message={error.message} onRetry={reset} />
-  );
+  return <ErrorView title="Algo salió mal" message={error.message} onRetry={reset} />;
 }
 ```
 

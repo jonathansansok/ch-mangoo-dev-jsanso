@@ -10,26 +10,26 @@ Definir entidades, relaciones, invariantes e índices para que el flujo extracci
 
 Cabecera de la solicitud cargada desde `purchase_requests.csv`.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK interna |
-| `externalId` | String | `REQ-OFI-2026-001`. Unique. Index. |
-| `title` | String | |
-| `createdAt` | DateTime | default now |
+| Campo        | Tipo              | Notas                              |
+| ------------ | ----------------- | ---------------------------------- |
+| `id`         | Int autoincrement | PK interna                         |
+| `externalId` | String            | `REQ-OFI-2026-001`. Unique. Index. |
+| `title`      | String            |                                    |
+| `createdAt`  | DateTime          | default now                        |
 
 ### PurchaseRequestItem
 
 Líneas pedidas. Una por fila de `purchase_request_items.csv`.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK |
-| `requestId` | Int | FK → PurchaseRequest, onDelete Cascade |
-| `externalItemId` | Int | `item_id` del CSV (1, 2, 3...) |
-| `description` | String | crudo del CSV |
-| `quantity` | Decimal(14,3) | |
-| `unit` | String | `unidad`, `metro`, `rollo` |
-| `createdAt` | DateTime | |
+| Campo            | Tipo              | Notas                                  |
+| ---------------- | ----------------- | -------------------------------------- |
+| `id`             | Int autoincrement | PK                                     |
+| `requestId`      | Int               | FK → PurchaseRequest, onDelete Cascade |
+| `externalItemId` | Int               | `item_id` del CSV (1, 2, 3...)         |
+| `description`    | String            | crudo del CSV                          |
+| `quantity`       | Decimal(14,3)     |                                        |
+| `unit`           | String            | `unidad`, `metro`, `rollo`             |
+| `createdAt`      | DateTime          |                                        |
 
 Constraint: `unique(requestId, externalItemId)`. Index: `(requestId)`.
 
@@ -37,20 +37,20 @@ Constraint: `unique(requestId, externalItemId)`. Index: `(requestId)`.
 
 Oferta procesada de un proveedor para una solicitud puntual.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK |
-| `requestId` | Int | FK → PurchaseRequest, onDelete Cascade |
-| `supplierName` | String? | puede faltar en oferta mal estructurada |
-| `offerDate` | DateTime? | |
-| `sourceFile` | String | nombre original del archivo |
-| `sourceFileHash` | String | sha256 hex. Unique. Habilita cache. |
-| `sourceFileMime` | String | `application/pdf`, `application/vnd.openxmlformats...` |
-| `observations` | String? | texto largo |
-| `status` | Enum `OfferStatus` | máquina de estados (ver abajo) |
-| `failureReason` | String? | si status = FAILED |
-| `createdAt` | DateTime | |
-| `updatedAt` | DateTime | |
+| Campo            | Tipo               | Notas                                                  |
+| ---------------- | ------------------ | ------------------------------------------------------ |
+| `id`             | Int autoincrement  | PK                                                     |
+| `requestId`      | Int                | FK → PurchaseRequest, onDelete Cascade                 |
+| `supplierName`   | String?            | puede faltar en oferta mal estructurada                |
+| `offerDate`      | DateTime?          |                                                        |
+| `sourceFile`     | String             | nombre original del archivo                            |
+| `sourceFileHash` | String             | sha256 hex. Unique. Habilita cache.                    |
+| `sourceFileMime` | String             | `application/pdf`, `application/vnd.openxmlformats...` |
+| `observations`   | String?            | texto largo                                            |
+| `status`         | Enum `OfferStatus` | máquina de estados (ver abajo)                         |
+| `failureReason`  | String?            | si status = FAILED                                     |
+| `createdAt`      | DateTime           |                                                        |
+| `updatedAt`      | DateTime           |                                                        |
 
 Index: `(requestId)`, `(sourceFileHash)`, `(status)`.
 
@@ -58,19 +58,19 @@ Index: `(requestId)`, `(sourceFileHash)`, `(status)`.
 
 Líneas extraídas de la oferta.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK |
-| `offerId` | Int | FK → Offer, onDelete Cascade |
-| `lineNumber` | Int | orden en la oferta original (1, 2, 3...) |
-| `supplierCode` | String? | `SIP-00110`, `OFN-00110` |
-| `description` | String | descripción cruda del proveedor |
-| `quantity` | Decimal(14,3)? | nullable: el spec dice "qty cuando esté presente" |
-| `unitPrice` | Decimal(14,4)? | |
-| `currency` | String? | ISO 4217 (`ARS`, `USD`) |
-| `unit` | String? | crudo, sin normalizar todavía |
-| `rawObservations` | String? | observaciones por ítem |
-| `createdAt` | DateTime | |
+| Campo             | Tipo              | Notas                                             |
+| ----------------- | ----------------- | ------------------------------------------------- |
+| `id`              | Int autoincrement | PK                                                |
+| `offerId`         | Int               | FK → Offer, onDelete Cascade                      |
+| `lineNumber`      | Int               | orden en la oferta original (1, 2, 3...)          |
+| `supplierCode`    | String?           | `SIP-00110`, `OFN-00110`                          |
+| `description`     | String            | descripción cruda del proveedor                   |
+| `quantity`        | Decimal(14,3)?    | nullable: el spec dice "qty cuando esté presente" |
+| `unitPrice`       | Decimal(14,4)?    |                                                   |
+| `currency`        | String?           | ISO 4217 (`ARS`, `USD`)                           |
+| `unit`            | String?           | crudo, sin normalizar todavía                     |
+| `rawObservations` | String?           | observaciones por ítem                            |
+| `createdAt`       | DateTime          |                                                   |
 
 Index: `(offerId)`, `(offerId, lineNumber)` unique.
 
@@ -78,22 +78,22 @@ Index: `(offerId)`, `(offerId, lineNumber)` unique.
 
 Resultado agregado de conciliar una oferta contra su solicitud.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK |
-| `offerId` | Int | FK → Offer, onDelete Cascade. Unique (1:1) |
-| `requestId` | Int | FK → PurchaseRequest |
-| `summary` | String? | Markdown generado |
-| `itemsCovered` | Int | match + partial_quantity |
-| `itemsMissing` | Int | missing_from_offer |
-| `itemsExtra` | Int | extra |
-| `itemsPartial` | Int | partial_quantity |
-| `itemsLowConfidence` | Int | downgrade por verificadores |
-| `totalPromptTokens` | Int | suma de DecisionLog |
-| `totalCompletionTokens` | Int | |
-| `totalCostUsd` | Decimal(10,6) | costo total estimado |
-| `createdAt` | DateTime | |
-| `completedAt` | DateTime? | null mientras corre |
+| Campo                   | Tipo              | Notas                                      |
+| ----------------------- | ----------------- | ------------------------------------------ |
+| `id`                    | Int autoincrement | PK                                         |
+| `offerId`               | Int               | FK → Offer, onDelete Cascade. Unique (1:1) |
+| `requestId`             | Int               | FK → PurchaseRequest                       |
+| `summary`               | String?           | Markdown generado                          |
+| `itemsCovered`          | Int               | match + partial_quantity                   |
+| `itemsMissing`          | Int               | missing_from_offer                         |
+| `itemsExtra`            | Int               | extra                                      |
+| `itemsPartial`          | Int               | partial_quantity                           |
+| `itemsLowConfidence`    | Int               | downgrade por verificadores                |
+| `totalPromptTokens`     | Int               | suma de DecisionLog                        |
+| `totalCompletionTokens` | Int               |                                            |
+| `totalCostUsd`          | Decimal(10,6)     | costo total estimado                       |
+| `createdAt`             | DateTime          |                                            |
+| `completedAt`           | DateTime?         | null mientras corre                        |
 
 Index: `(offerId)` unique, `(requestId)`.
 
@@ -101,20 +101,20 @@ Index: `(offerId)` unique, `(requestId)`.
 
 Una línea por decisión. Cubre los 4 tipos de relación más `low_confidence`.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK |
-| `reconciliationId` | Int | FK → Reconciliation, onDelete Cascade |
-| `offerItemId` | Int? | FK → OfferItem. Null si `missing_from_offer` |
-| `requestItemId` | Int? | FK → PurchaseRequestItem. Null si `extra` |
-| `relation` | Enum `LineRelation` | MATCH, PARTIAL_QUANTITY, MISSING_FROM_OFFER, EXTRA, LOW_CONFIDENCE |
-| `confidence` | Decimal(4,3) | rango [0, 1] |
-| `embeddingSimilarity` | Decimal(4,3)? | coseno del shortlist, [0, 1] |
-| `quantityRequested` | Decimal(14,3)? | snapshot al momento de conciliar |
-| `quantityOffered` | Decimal(14,3)? | snapshot |
-| `rationale` | String | corto, ≤ 280 chars |
-| `flags` | Json | array de strings: `['quantity_anomaly', 'unit_mismatch', 'excess', 'currency_unknown']` |
-| `createdAt` | DateTime | |
+| Campo                 | Tipo                | Notas                                                                                   |
+| --------------------- | ------------------- | --------------------------------------------------------------------------------------- |
+| `id`                  | Int autoincrement   | PK                                                                                      |
+| `reconciliationId`    | Int                 | FK → Reconciliation, onDelete Cascade                                                   |
+| `offerItemId`         | Int?                | FK → OfferItem. Null si `missing_from_offer`                                            |
+| `requestItemId`       | Int?                | FK → PurchaseRequestItem. Null si `extra`                                               |
+| `relation`            | Enum `LineRelation` | MATCH, PARTIAL_QUANTITY, MISSING_FROM_OFFER, EXTRA, LOW_CONFIDENCE                      |
+| `confidence`          | Decimal(4,3)        | rango [0, 1]                                                                            |
+| `embeddingSimilarity` | Decimal(4,3)?       | coseno del shortlist, [0, 1]                                                            |
+| `quantityRequested`   | Decimal(14,3)?      | snapshot al momento de conciliar                                                        |
+| `quantityOffered`     | Decimal(14,3)?      | snapshot                                                                                |
+| `rationale`           | String              | corto, ≤ 280 chars                                                                      |
+| `flags`               | Json                | array de strings: `['quantity_anomaly', 'unit_mismatch', 'excess', 'currency_unknown']` |
+| `createdAt`           | DateTime            |                                                                                         |
 
 Constraint: chequear en aplicación que `offerItemId IS NOT NULL OR requestItemId IS NOT NULL` (Prisma no soporta CHECK directo en MySQL, valida el servicio).
 
@@ -124,21 +124,21 @@ Index: `(reconciliationId)`, `(offerItemId)`, `(requestItemId)`, `(relation)`.
 
 Auditoría de cada llamada al LLM. No se borra al eliminar Offer (audit trail).
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | BigInt autoincrement | PK. BigInt porque crece rápido. |
-| `offerId` | Int? | FK → Offer, onDelete SetNull |
-| `reconciliationLineId` | Int? | FK → ReconciliationLine, onDelete SetNull |
-| `kind` | Enum `DecisionKind` | EXTRACT_HEADER, EXTRACT_ITEMS, EMBED_REQUEST, EMBED_OFFER, JUDGE_BATCH |
-| `model` | String | `gpt-4o-mini`, `text-embedding-3-small` |
-| `promptTokens` | Int | |
-| `completionTokens` | Int | |
-| `costUsd` | Decimal(10,6) | calculado en wrapper |
-| `prompt` | Text | truncado a 10k chars si excede |
-| `rawResponse` | Text | truncado a 10k chars si excede |
-| `candidatesConsidered` | Json? | `[{requestItemId, similarity}, ...]` para JUDGE_BATCH |
-| `durationMs` | Int | |
-| `createdAt` | DateTime | |
+| Campo                  | Tipo                 | Notas                                                                  |
+| ---------------------- | -------------------- | ---------------------------------------------------------------------- |
+| `id`                   | BigInt autoincrement | PK. BigInt porque crece rápido.                                        |
+| `offerId`              | Int?                 | FK → Offer, onDelete SetNull                                           |
+| `reconciliationLineId` | Int?                 | FK → ReconciliationLine, onDelete SetNull                              |
+| `kind`                 | Enum `DecisionKind`  | EXTRACT_HEADER, EXTRACT_ITEMS, EMBED_REQUEST, EMBED_OFFER, JUDGE_BATCH |
+| `model`                | String               | `gpt-4o-mini`, `text-embedding-3-small`                                |
+| `promptTokens`         | Int                  |                                                                        |
+| `completionTokens`     | Int                  |                                                                        |
+| `costUsd`              | Decimal(10,6)        | calculado en wrapper                                                   |
+| `prompt`               | Text                 | truncado a 10k chars si excede                                         |
+| `rawResponse`          | Text                 | truncado a 10k chars si excede                                         |
+| `candidatesConsidered` | Json?                | `[{requestItemId, similarity}, ...]` para JUDGE_BATCH                  |
+| `durationMs`           | Int                  |                                                                        |
+| `createdAt`            | DateTime             |                                                                        |
 
 Index: `(offerId)`, `(kind, createdAt)`.
 
@@ -146,15 +146,15 @@ Index: `(offerId)`, `(kind, createdAt)`.
 
 Resultado de extracción cacheado por hash de archivo. Evita re-llamar al LLM cuando el mismo archivo se sube de nuevo.
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | Int autoincrement | PK |
-| `fileHash` | String | sha256. Unique. |
-| `fileName` | String | último nombre visto |
-| `mime` | String | |
-| `payload` | Json | `{ header: {...}, items: [...] }` validado por Zod |
-| `model` | String | modelo que generó la extracción |
-| `createdAt` | DateTime | |
+| Campo       | Tipo              | Notas                                              |
+| ----------- | ----------------- | -------------------------------------------------- |
+| `id`        | Int autoincrement | PK                                                 |
+| `fileHash`  | String            | sha256. Unique.                                    |
+| `fileName`  | String            | último nombre visto                                |
+| `mime`      | String            |                                                    |
+| `payload`   | Json              | `{ header: {...}, items: [...] }` validado por Zod |
+| `model`     | String            | modelo que generó la extracción                    |
+| `createdAt` | DateTime          |                                                    |
 
 Index: `(fileHash)` unique.
 
@@ -239,17 +239,17 @@ Reglas:
 
 ## Cascadas
 
-| Padre | Hijo | Acción al borrar padre |
-|---|---|---|
-| PurchaseRequest | PurchaseRequestItem | Cascade |
-| PurchaseRequest | Offer | Cascade |
-| Offer | OfferItem | Cascade |
-| Offer | Reconciliation | Cascade |
-| Reconciliation | ReconciliationLine | Cascade |
-| OfferItem | ReconciliationLine | SetNull (mantener línea con razón) |
-| PurchaseRequestItem | ReconciliationLine | SetNull |
-| Offer | DecisionLog | SetNull (auditoría sobrevive) |
-| ReconciliationLine | DecisionLog | SetNull |
+| Padre               | Hijo                | Acción al borrar padre             |
+| ------------------- | ------------------- | ---------------------------------- |
+| PurchaseRequest     | PurchaseRequestItem | Cascade                            |
+| PurchaseRequest     | Offer               | Cascade                            |
+| Offer               | OfferItem           | Cascade                            |
+| Offer               | Reconciliation      | Cascade                            |
+| Reconciliation      | ReconciliationLine  | Cascade                            |
+| OfferItem           | ReconciliationLine  | SetNull (mantener línea con razón) |
+| PurchaseRequestItem | ReconciliationLine  | SetNull                            |
+| Offer               | DecisionLog         | SetNull (auditoría sobrevive)      |
+| ReconciliationLine  | DecisionLog         | SetNull                            |
 
 ## Decimales
 

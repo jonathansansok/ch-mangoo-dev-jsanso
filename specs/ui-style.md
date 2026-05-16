@@ -10,52 +10,52 @@ Inspirado en el dashboard interno de Oceans HR (`C:\dev\oceans-hr`). Mismo lengu
 
 ### Colores base
 
-| Token | Valor | Uso |
-|---|---|---|
-| `--brand-purple` | `#662f8e` | Primary. Cifras grandes, sidebar active, focos. |
-| `--company-primary` | `#662f8e` | Alias de brand-purple. |
-| `--brand-blue` | `#3953a3` | Acento. |
-| `--text-title` | `#2f458a` | Títulos, labels de KPI, links primarios. Navy. |
-| `--text-muted` | `#65758b` | Subtítulos, captions. |
-| `--text-soft` | `#6a7282` | Texto secundario en tablas. |
-| `--bg-banner` | `#edebf2` | Fondo del área de contenido, búsqueda, badges sutiles. Lavanda claro. |
-| `--bg-card` | `#ffffff` | Cards. |
-| `--border-muted` | `#a9a9a9` | Borde default de cards. |
-| `--border-soft` | `#99a1af` | Borde más sutil. |
-| `--border-light` | `#d1d5db` | Divisores internos. |
-| `--green` | `#21c45d` | Éxito. |
+| Token               | Valor     | Uso                                                                   |
+| ------------------- | --------- | --------------------------------------------------------------------- |
+| `--brand-purple`    | `#662f8e` | Primary. Cifras grandes, sidebar active, focos.                       |
+| `--company-primary` | `#662f8e` | Alias de brand-purple.                                                |
+| `--brand-blue`      | `#3953a3` | Acento.                                                               |
+| `--text-title`      | `#2f458a` | Títulos, labels de KPI, links primarios. Navy.                        |
+| `--text-muted`      | `#65758b` | Subtítulos, captions.                                                 |
+| `--text-soft`       | `#6a7282` | Texto secundario en tablas.                                           |
+| `--bg-banner`       | `#edebf2` | Fondo del área de contenido, búsqueda, badges sutiles. Lavanda claro. |
+| `--bg-card`         | `#ffffff` | Cards.                                                                |
+| `--border-muted`    | `#a9a9a9` | Borde default de cards.                                               |
+| `--border-soft`     | `#99a1af` | Borde más sutil.                                                      |
+| `--border-light`    | `#d1d5db` | Divisores internos.                                                   |
+| `--green`           | `#21c45d` | Éxito.                                                                |
 
 ### Estados semánticos (pills de conciliación)
 
-| Estado | Bg | Text |
-|---|---|---|
-| `match` | `#dcfce7` | `#166534` |
-| `partial_quantity` | `#fef3c7` | `#92400e` |
+| Estado               | Bg        | Text      |
+| -------------------- | --------- | --------- |
+| `match`              | `#dcfce7` | `#166534` |
+| `partial_quantity`   | `#fef3c7` | `#92400e` |
 | `missing_from_offer` | `#fee2e2` | `#991b1b` |
-| `extra` | `#dbeafe` | `#1e40af` |
-| `low_confidence` | `#e5e7eb` | `#374151` |
+| `extra`              | `#dbeafe` | `#1e40af` |
+| `low_confidence`     | `#e5e7eb` | `#374151` |
 
 ### Tipografía
 
 Fuente única: **Inter** (vía `next/font/google`). No usar otra.
 
 ```ts
-import { Inter } from 'next/font/google'
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+import { Inter } from 'next/font/google';
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 ```
 
 Escala:
 
-| Uso | Clase |
-|---|---|
-| Page title | `text-[28px] font-bold text-[#2f458a] leading-[0.85]` |
-| Page subtitle | `text-[14px] font-normal text-[#65758b] leading-[0.85]` |
-| KPI value | `text-[45px] font-bold leading-[51px] text-[var(--company-primary)]` |
-| Card title | `text-base font-semibold text-[#2f458a]` |
-| Card label | `text-sm font-semibold text-[#2f458a]` |
-| Section pill label | `text-base font-semibold text-white` |
-| Body | `text-sm text-[#6a7282]` |
-| Caption | `text-xs text-[#65758b]` |
+| Uso                | Clase                                                                |
+| ------------------ | -------------------------------------------------------------------- |
+| Page title         | `text-[28px] font-bold text-[#2f458a] leading-[0.85]`                |
+| Page subtitle      | `text-[14px] font-normal text-[#65758b] leading-[0.85]`              |
+| KPI value          | `text-[45px] font-bold leading-[51px] text-[var(--company-primary)]` |
+| Card title         | `text-base font-semibold text-[#2f458a]`                             |
+| Card label         | `text-sm font-semibold text-[#2f458a]`                               |
+| Section pill label | `text-base font-semibold text-white`                                 |
+| Body               | `text-sm text-[#6a7282]`                                             |
+| Caption            | `text-xs text-[#65758b]`                                             |
 
 ## Layout
 
@@ -95,27 +95,20 @@ Detalles del shell:
 Bordes asimétricos: top-right + bottom-left redondeados, top-left + bottom-right rectos. Es la firma visual.
 
 ```tsx
-<div className="
-  flex flex-col justify-between p-4
-  rounded-tr-3xl rounded-bl-3xl rounded-tl-none rounded-br-none
-  border border-[#a9a9a9] bg-white
-  flex-1 min-w-40 gap-[5.3px]
-  transition-all duration-200
-  hover:shadow-md hover:scale-[1.02] cursor-pointer
-">
-  <div className="flex items-start justify-between mb-2">
-    <span className="text-[45px] font-bold leading-[51.233px] text-[var(--company-primary)]">
+<div className="flex min-w-40 flex-1 cursor-pointer flex-col justify-between gap-[5.3px] rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#a9a9a9] bg-white p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-md">
+  <div className="mb-2 flex items-start justify-between">
+    <span className="text-[45px] leading-[51.233px] font-bold text-[var(--company-primary)]">
       {value}
     </span>
-    <div className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 bg-[#edebf2] text-[#2f458a]">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#edebf2] text-[#2f458a]">
       {icon}
     </div>
   </div>
-  <span className="text-base font-semibold leading-4 text-[#2f458a] whitespace-pre-line">
+  <span className="text-base leading-4 font-semibold whitespace-pre-line text-[#2f458a]">
     {label}
   </span>
   {subtitle && (
-    <span className="text-xs font-bold leading-4 mt-1 text-[var(--company-primary)]">
+    <span className="mt-1 text-xs leading-4 font-bold text-[var(--company-primary)]">
       {subtitle}
     </span>
   )}
@@ -127,16 +120,10 @@ Estado seleccionado: cambiar borde a `border-[var(--company-primary)] border-b-3
 ### Card de contenido
 
 ```tsx
-<div className="
-  flex-1 border border-[#d1d5db]
-  rounded-tr-3xl rounded-bl-3xl rounded-tl-none rounded-br-none
-  bg-white p-5
-">
-  <div className="flex items-center gap-2 mb-6">
-    <Icon className="w-5 h-5 text-[#2f458a]" />
-    <span className="text-base font-semibold text-[#2f458a] leading-4">
-      {title}
-    </span>
+<div className="flex-1 rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-5">
+  <div className="mb-6 flex items-center gap-2">
+    <Icon className="h-5 w-5 text-[#2f458a]" />
+    <span className="text-base leading-4 font-semibold text-[#2f458a]">{title}</span>
   </div>
   {children}
 </div>
@@ -147,8 +134,8 @@ Estado seleccionado: cambiar borde a `border-[var(--company-primary)] border-b-3
 Pill de azul navy con texto blanco, anclado a la izquierda del contenido. Se usa para títulos de cards inferiores ("Actividad reciente", "Conciliaciones recientes", etc).
 
 ```tsx
-<div className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#2f458a] text-white rounded-[10px] self-start shrink-0">
-  <Icon className="w-5 h-5" />
+<div className="inline-flex shrink-0 items-center gap-2 self-start rounded-[10px] bg-[#2f458a] px-4 py-2.5 text-white">
+  <Icon className="h-5 w-5" />
   <span className="text-base font-semibold">{label}</span>
 </div>
 ```
@@ -158,10 +145,12 @@ Pill de azul navy con texto blanco, anclado a la izquierda del contenido. Se usa
 Pills coloreadas con la palette semántica. Sin shadcn, custom span:
 
 ```tsx
-<span className={cn(
-  "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-  variants[relation]
-)}>
+<span
+  className={cn(
+    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+    variants[relation],
+  )}
+>
   {labels[relation]}
 </span>
 ```
@@ -191,13 +180,14 @@ Fondo blanco con texto purple primario. Estructura por categorías (overview, re
 ```tsx
 <Link
   href={item.href}
-  className="flex items-center gap-2 py-1.5 px-2.5 rounded-lg text-[13px] font-semibold cursor-pointer transition-colors duration-150"
-  style={isActive
-    ? { backgroundColor: 'var(--company-primary)', color: 'white' }
-    : { color: 'var(--company-primary)' }
+  className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] font-semibold transition-colors duration-150"
+  style={
+    isActive
+      ? { backgroundColor: 'var(--company-primary)', color: 'white' }
+      : { color: 'var(--company-primary)' }
   }
 >
-  <Icon className="w-5 h-5 shrink-0" />
+  <Icon className="h-5 w-5 shrink-0" />
   <span>{item.label}</span>
 </Link>
 ```
@@ -207,14 +197,14 @@ Sub-items con tree visual (bullet point + línea vertical sutil del color primar
 ### Header bar
 
 ```tsx
-<header className="bg-white shrink-0">
-  <div className="flex items-center justify-between h-24 pl-10 pr-6">
+<header className="shrink-0 bg-white">
+  <div className="flex h-24 items-center justify-between pr-6 pl-10">
     {/* Logo + brand */}
     {/* Search bar */}
-    <div className="flex-1 max-w-[600px] mx-6">
-      <div className="flex items-center gap-[18px] h-[54px] px-[27px] pr-4 rounded-[25px] bg-[#edebf2] text-[#65758b]">
+    <div className="mx-6 max-w-[600px] flex-1">
+      <div className="flex h-[54px] items-center gap-[18px] rounded-[25px] bg-[#edebf2] px-[27px] pr-4 text-[#65758b]">
         <SearchIcon />
-        <input className="border-none bg-transparent outline-none text-base text-[#101828] w-full placeholder:text-[#65758b]" />
+        <input className="w-full border-none bg-transparent text-base text-[#101828] outline-none placeholder:text-[#65758b]" />
       </div>
     </div>
     {/* User dropdown */}
@@ -239,9 +229,7 @@ Sin shadcn. Tabla nativa con estilos directos:
 <table className="w-full">
   <thead className="bg-[#edebf2]">
     <tr>
-      <th className="text-left text-xs uppercase tracking-wide text-[#65758b] px-4 py-3">
-        ...
-      </th>
+      <th className="px-4 py-3 text-left text-xs tracking-wide text-[#65758b] uppercase">...</th>
     </tr>
   </thead>
   <tbody>

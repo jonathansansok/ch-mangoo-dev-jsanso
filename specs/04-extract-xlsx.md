@@ -15,8 +15,17 @@ Mismo shape que spec 03:
 
 ```ts
 type ExtractedOffer = {
-  header: { supplierName, offerDate, observations };
-  items: Array<{ lineNumber, supplierCode, description, quantity, unitPrice, currency, unit, rawObservations }>;
+  header: { supplierName; offerDate; observations };
+  items: Array<{
+    lineNumber;
+    supplierCode;
+    description;
+    quantity;
+    unitPrice;
+    currency;
+    unit;
+    rawObservations;
+  }>;
   meta: { strategy: 'direct' | 'llm-assisted'; model: string | null; fromCache: boolean };
 };
 ```
