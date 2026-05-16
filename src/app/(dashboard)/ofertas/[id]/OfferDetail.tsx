@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { OfferStatus } from '@prisma/client';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -18,6 +20,8 @@ interface StatusResponse {
 }
 
 export function OfferDetail({ offer }: { offer: OfferView }) {
+  const router = useRouter();
+  const lastStatusRef = useRef<OfferStatus>(offer.status);
   const { data: live } = useQuery<StatusResponse>({
     queryKey: ['offer-status', offer.id],
     queryFn: async () => {
@@ -39,6 +43,14 @@ export function OfferDetail({ offer }: { offer: OfferView }) {
 
   const currentStatus = live?.status ?? offer.status;
   const currentReason = live?.failureReason ?? offer.failureReason;
+
+  useEffect(() => {
+    const prev = lastStatusRef.current;
+    if (prev !== currentStatus && TERMINAL.includes(currentStatus)) {
+      router.refresh();
+    }
+    lastStatusRef.current = currentStatus;
+  }, [currentStatus, router]);
 
   return (
     <>

@@ -7,14 +7,15 @@ import type { ReconciliationView } from './types';
 
 export function ReconciliationSection({ reconciliation }: { reconciliation: ReconciliationView }) {
   const confidenceFmt = (s: string) => formatPercent(Number(s) * 100);
-  const total =
-    reconciliation.itemsCovered + reconciliation.itemsMissing + reconciliation.itemsExtra;
-  const coverage = total > 0 ? formatPercent((reconciliation.itemsCovered / total) * 100) : '—';
+  const requested =
+    reconciliation.itemsCovered + reconciliation.itemsPartial + reconciliation.itemsMissing;
+  const matched = reconciliation.itemsCovered + reconciliation.itemsPartial;
+  const coverage = requested > 0 ? formatPercent((matched / requested) * 100) : '—';
 
   return (
     <>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Cubiertos" value={String(reconciliation.itemsCovered)} />
+        <StatCard label="Match" value={String(reconciliation.itemsCovered)} />
         <StatCard label="Parciales" value={String(reconciliation.itemsPartial)} />
         <StatCard label="Faltantes" value={String(reconciliation.itemsMissing)} />
         <StatCard label="Sobrantes" value={String(reconciliation.itemsExtra)} />
@@ -48,6 +49,9 @@ export function ReconciliationSection({ reconciliation }: { reconciliation: Reco
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
                 Qty ofertada
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
+                Similitud
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
                 Confianza
@@ -100,6 +104,11 @@ export function ReconciliationSection({ reconciliation }: { reconciliation: Reco
                 </td>
                 <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
                   {formatQty(line.quantityOffered)}
+                </td>
+                <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
+                  {line.embeddingSimilarity !== null
+                    ? confidenceFmt(line.embeddingSimilarity)
+                    : '—'}
                 </td>
                 <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
                   {confidenceFmt(line.confidence)}
