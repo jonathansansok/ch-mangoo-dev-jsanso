@@ -76,18 +76,6 @@ Costo estimado case-complex ~$0.10 USD con `gpt-4o-mini`.
 - Cuando arranque la implementación, agregar `README.md` con quickstart, decisiones técnicas y modelo de datos. El spec lo exige en la página 2.
 - No inventar comandos en este CLAUDE.md que todavía no existan. Se actualiza después del primer scaffold.
 
-## Estilo de código
-
-- Comentarios pocos y certeros. Solo cuando el _por qué_ no es obvio. Si el nombre lo dice, no comentar.
-- Nada de narrar el qué: nada de `// itera sobre items`, `// función que valida X`.
-- Sin emojis en código, sin headers ASCII, sin firmas tipo `🤖 Generated with Claude`. Sin `Co-Authored-By: Claude` en commits.
-- Sin docstrings inflados. Una línea si hace falta.
-- Sin defensive coding gratuito. No `try/catch` que solo re-lanza, no validar parámetros internos cuando el tipo ya lo prohíbe. Validar en bordes (input usuario, archivos, API externa).
-- Errores específicos donde importan, no envoltorios `Error("something went wrong")`.
-- Commits humanos. Modo imperativo, sin pie de Claude.
-- Sin TODO/FIXME huérfanos. Si no se hace, no se escribe.
-- Nombres idiomáticos del stack. `parseOffer` antes que `parseAndExtractSupplierOfferFromFile`.
-
 ## Railway deploy — no romper
 
 App live en Railway con auto-deploy en `main`. Stack de infra que NO se toca sin entender consecuencias:
