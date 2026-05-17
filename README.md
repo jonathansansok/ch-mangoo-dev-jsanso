@@ -65,7 +65,7 @@ App en `http://localhost:3000`. Health en `/api/health`, version (commit SHA) en
 La consigna del challenge dice explícitamente que la UI es opcional. Para correr el pipeline headless y obtener los 4 entregables como archivos:
 
 ```bash
-pnpm process-offer fixtures/scenarios/case-simple/offers/oferta_papelera_norte.pdf
+pnpm process-offer fixtures/scenarios/case-simple/offers/oferta_comercial_oficinas.pdf
 ```
 
 Genera en `output/<proveedor-hash>/`:
