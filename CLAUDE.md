@@ -78,8 +78,6 @@ Costo estimado case-complex ~$0.10 USD con `gpt-4o-mini`.
 
 ## Estilo de código
 
-Esto se entrega a evaluadores. El código tiene que verse escrito por una persona.
-
 - Comentarios pocos y certeros. Solo cuando el _por qué_ no es obvio. Si el nombre lo dice, no comentar.
 - Nada de narrar el qué: nada de `// itera sobre items`, `// función que valida X`.
 - Sin emojis en código, sin headers ASCII, sin firmas tipo `🤖 Generated with Claude`. Sin `Co-Authored-By: Claude` en commits.
