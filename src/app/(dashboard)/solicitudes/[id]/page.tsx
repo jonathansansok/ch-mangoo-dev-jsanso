@@ -39,16 +39,16 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
           <ArrowLeft className="h-4 w-4" />
           Solicitudes
         </Link>
-        <div className="flex items-end gap-2.5">
-          <FileText className="h-8 w-8 shrink-0 text-[#2f458a]" />
-          <h1 className="text-[28px] leading-tight font-bold text-[#2f458a]">
+        <div className="flex items-center gap-2.5">
+          <FileText className="h-7 w-7 shrink-0 text-[#2f458a] md:h-8 md:w-8" />
+          <h1 className="text-2xl leading-tight font-bold break-all text-[#2f458a] md:text-[28px]">
             {request.externalId}
           </h1>
         </div>
         <p className="text-sm text-[#65758b]">{request.title}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Items pedidos" value={String(request.items.length).padStart(2, '0')} />
         <StatCard
           label="Ofertas recibidas"
@@ -56,7 +56,7 @@ export default async function SolicitudDetailPage({ params }: PageProps) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white">
+      <div className="overflow-x-auto rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white">
         <div className="flex items-center gap-2 border-b border-[#edebf2] bg-[#edebf2] px-4 py-3">
           <span className="text-base font-semibold text-[#2f458a]">Items solicitados</span>
         </div>

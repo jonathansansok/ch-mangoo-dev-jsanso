@@ -49,7 +49,7 @@ pnpm dev
 
 App en `http://localhost:3000`. Health en `/api/health`, version (commit SHA) en `/api/version`.
 
-### Procesar una oferta
+### Procesar una oferta (UI)
 
 1. Ir a `Ofertas → Subir`
 2. Elegir la solicitud destino (seed crea `REQ-OFI-2026-001` y `REQ-MOP-2026-001`)
@@ -57,8 +57,25 @@ App en `http://localhost:3000`. Health en `/api/health`, version (commit SHA) en
 4. El pipeline corre en background. La página de detalle hace polling y muestra:
    - Header extraído (proveedor, fecha, observaciones)
    - Tabla de items ofertados con precios y cantidades
-   - Tabla conciliada (match / parcial / missing / extra / low_confidence) con rationale
+   - Tabla conciliada con `match / parcial / faltante / sobrante` y flag `baja confianza` cuando los verificadores no avalan al judge
    - Markdown descargable para el comprador
+
+### Procesar una oferta (CLI, sin UI)
+
+La consigna del challenge dice explícitamente que la UI es opcional. Para correr el pipeline headless y obtener los 4 entregables como archivos:
+
+```bash
+pnpm process-offer fixtures/scenarios/case-simple/offers/oferta_comercial_oficinas.pdf
+```
+
+Genera en `output/<proveedor-hash>/`:
+
+- `oferta.json` — cabecera + items extraídos.
+- `tabla.md` — tabla conciliada (match, parcial, faltante, sobrante).
+- `summary.md` — resumen Markdown para el comprador.
+- `trace.csv` — una fila por llamada al LLM con tokens, costo y duración.
+
+Solicitud destino se detecta del path (`case-simple` → `REQ-OFI-2026-001`, `case-complex` → `REQ-MOP-2026-001`). Override con `--request <externalId>`.
 
 ## Modelo de datos
 
@@ -73,7 +90,8 @@ ExtractionCache (sha256 → payload normalizado)
 
 Ver `prisma/schema.prisma` para campos exactos. Notas:
 
-- `Offer.status` es máquina de estados: `PENDING → EXTRACTING → EXTRACTED → RECONCILING → RECONCILED | FAILED`.
+- `Offer.status` es máquina de estados: `PENDING → EXTRACTING → EXTRACTED → RECONCILING → RECONCILED | FAILED`. La consigna no impone estados; este enum es decisión propia.
+- `ReconciliationLine.relation` tiene los 4 valores que pide la consigna: `MATCH`, `PARTIAL_QUANTITY`, `MISSING_FROM_OFFER`, `EXTRA`. La baja confianza es un flag ortogonal (`lowConfidence: boolean`), no una relación adicional — preserva el veredicto original del judge cuando los verificadores no lo avalan.
 - `ReconciliationLine.flags` (Json) guarda alertas de verificadores: `quantity_anomaly`, `unit_mismatch`, `low_similarity`.
 - `DecisionLog.candidatesConsidered` (Json) guarda los IDs y scores que entraron al shortlist, para trazabilidad de por qué el judge decidió lo que decidió.
 
@@ -99,7 +117,7 @@ El problema central planteado en la entrevista: OpenAI pierde contexto en oferta
 1. **Embeddings primero**. Items de la solicitud se embeben una vez y se cachean. Para cada offer item se calcula top-K (`SHORTLIST_K=10`) candidatos por coseno.
 2. **Judge en batches chicos**. Cada batch de ≤10 offer items lleva su shortlist completa. El LLM solo elige entre candidatos pre-filtrados, no "recuerda" la solicitud entera.
 3. **Outputs referenciales**. El judge devuelve `{ request_item_id, relation, confidence, rationale_short }`. Nunca repite descripciones ni precios — esos viven en DB.
-4. **Verificadores post-LLM**. Si la similaridad embedding cae bajo `MIN_SIMILARITY=0.55` y la confianza del judge bajo `TRUST_JUDGE_CONFIDENCE=0.7`, downgrade automático a `low_confidence`. Qty fuera de rango `[0.1×, 3×]` añade flag `quantity_anomaly`.
+4. **Verificadores post-LLM**. Si la similaridad embedding cae bajo `MIN_SIMILARITY=0.55` y la confianza del judge bajo `TRUST_JUDGE_CONFIDENCE=0.7`, la línea se marca con `lowConfidence=true` pero conserva su `relation` original (`MATCH` o `PARTIAL_QUANTITY`). Así el comprador ve la decisión del judge y el cuestionamiento del verificador, sin perder ninguno de los dos. Qty fuera de rango `[0.1×, 3×]` añade flag `quantity_anomaly`.
 5. **Reverse pass**. Los items de la solicitud sin match se vuelven a embeber contra los extras de la oferta. Si el judge confirma con confianza ≥ `REVERSE_PASS_MIN_CONFIDENCE=0.7`, se recupera el par. Recupera casos como `Canaleta PVC ↔ Ducto polipropileno pasacable`.
 
 ### Volumen
@@ -127,18 +145,18 @@ Cada `ReconciliationLine` tiene FK al `DecisionLog` que la produjo. La UI muestr
 
 ## Knobs (env vars)
 
-| Var                           | Default      | Efecto                                                     |
-| ----------------------------- | ------------ | ---------------------------------------------------------- |
-| `SHORTLIST_K`                 | 10           | Top-K candidatos por offer item para forward judge         |
-| `JUDGE_BATCH_SIZE`            | 10           | Items por batch al judge                                   |
-| `MIN_SIMILARITY`              | 0.55         | Verificador post-judge para downgrade a low_confidence     |
-| `TRUST_JUDGE_CONFIDENCE`      | 0.7          | Si confianza del judge ≥ esto, no downgrade por similarity |
-| `REVERSE_PASS_K`              | 8            | Top-K extras candidatos para cada unassigned request       |
-| `REVERSE_PASS_MIN_CONFIDENCE` | 0.7          | Confianza mínima para aceptar recovery                     |
-| `QTY_RATIO_MIN/MAX`           | 0.1 / 3.0    | Rango aceptable de cantidad ofertada vs pedida             |
-| `MAX_TOKENS_PER_RUN`          | 100000       | Budget guard por pipeline                                  |
-| `EXTRACT_MODEL`               | gpt-4o-mini  | Modelo para extracción                                     |
-| `JUDGE_MODEL`                 | gpt-4.1-mini | Modelo para forward judge y reverse pass                   |
+| Var                           | Default      | Efecto                                                   |
+| ----------------------------- | ------------ | -------------------------------------------------------- |
+| `SHORTLIST_K`                 | 10           | Top-K candidatos por offer item para forward judge       |
+| `JUDGE_BATCH_SIZE`            | 10           | Items por batch al judge                                 |
+| `MIN_SIMILARITY`              | 0.55         | Verificador post-judge: por debajo marca `lowConfidence` |
+| `TRUST_JUDGE_CONFIDENCE`      | 0.7          | Si confianza del judge ≥ esto, no marca `lowConfidence`  |
+| `REVERSE_PASS_K`              | 8            | Top-K extras candidatos para cada unassigned request     |
+| `REVERSE_PASS_MIN_CONFIDENCE` | 0.7          | Confianza mínima para aceptar recovery                   |
+| `QTY_RATIO_MIN/MAX`           | 0.1 / 3.0    | Rango aceptable de cantidad ofertada vs pedida           |
+| `MAX_TOKENS_PER_RUN`          | 100000       | Budget guard por pipeline                                |
+| `EXTRACT_MODEL`               | gpt-4o-mini  | Modelo para extracción                                   |
+| `JUDGE_MODEL`                 | gpt-4.1-mini | Modelo para forward judge y reverse pass                 |
 
 ## Testing
 

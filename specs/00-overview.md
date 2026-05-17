@@ -81,12 +81,12 @@ Contexto: el equipo planteó en la entrevista técnica que su último problema f
 2. **Outputs referenciales, no narrativos.** Reconciliación devuelve `{ request_item_id, relation, confidence, rationale_short }`. Sin repetir descripción ni precio.
 3. **Una llamada, una responsabilidad.** Prompts separados: header oferta, items oferta, batch de reconciliación. Sin mega-prompt con todo el contexto adentro.
 4. **Batches chicos y autocontenidos.** Lotes de ≤10 offer items con su shortlist completa. Sin estado entre llamadas. Cero context drift por longitud.
-5. **Schema-first con Zod.** Salida estructurada vía `response_format` o function calling. Si rompe schema, reintento con feedback (máx 2), después fallback a `low_confidence` con raw persistido.
+5. **Schema-first con Zod.** Salida estructurada vía `response_format` o function calling. Si rompe schema, reintento con feedback (máx 2), después fallback: línea con `relation=extra, lowConfidence=true` y raw persistido.
 6. **Grounding por embeddings.** Shortlist se calcula con coseno antes del judge. El modelo elige entre candidatos pre-filtrados, no "recuerda" la solicitud entera.
 7. **Streaming es UX, no fix de contexto.** Stream de progreso al cliente durante extracciones largas. No se confunde con la solución del problema real, que ya está resuelto por las reglas 1-6.
 8. **Cache por hash de archivo.** `sha256(file)` como key en tabla `ExtractionCache`. Mismo archivo no re-llama al LLM.
 9. **DecisionLog por llamada.** Persistir model, tokens in/out, costo estimado, prompt, raw response, candidatos considerados, decisión, rationale, duración.
-10. **Verificadores deterministas post-LLM.** Después del judge: similaridad embedding ≥ 0.65 si no `low_confidence`. Qty ofertada dentro de rango (0.1× a 3× la pedida) si no flag `quantity_anomaly`. Unidades compatibles tras normalizar (`metro`↔`m`, `unidad`↔`u`) si no flag `unit_mismatch`.
+10. **Verificadores deterministas post-LLM.** Después del judge: similaridad embedding ≥ 0.65 si no se marca `lowConfidence=true` (conserva la relación del judge). Qty ofertada dentro de rango (0.1× a 3× la pedida) si no flag `quantity_anomaly`. Unidades compatibles tras normalizar (`metro`↔`m`, `unidad`↔`u`) si no flag `unit_mismatch`. La consigna define 4 relaciones; la baja confianza es un flag, no una quinta relación.
 
 ## Volumen (220 ítems)
 

@@ -36,6 +36,14 @@ vi.mock('./status', () => ({
   setOfferStatus: vi.fn(),
 }));
 
+vi.mock('@/infra/db/prisma', () => ({
+  prisma: {
+    offer: {
+      update: vi.fn().mockResolvedValue({}),
+    },
+  },
+}));
+
 vi.mock('@/infra/reconcile/reconcile-service', () => {
   class ReconcileError extends Error {
     constructor(

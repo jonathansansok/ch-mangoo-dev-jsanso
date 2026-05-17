@@ -112,11 +112,11 @@ Columnas:
 - `#`: índice (1, 2, 3...)
 - `Hora`: `HH:mm:ss` en es-AR
 - `Tipo`: label legible en español:
-  - `EXTRACT_HEADER` → "Extracción header"
-  - `EXTRACT_ITEMS` → "Extracción items"
-  - `EMBED_REQUEST` → "Embeddings solicitud"
-  - `EMBED_OFFER` → "Embeddings oferta"
-  - `JUDGE_BATCH` → "Conciliación lote"
+  - `EXTRACT_HEADER` → "Datos del proveedor"
+  - `EXTRACT_ITEMS` → "Ítems de la oferta"
+  - `EMBED_REQUEST` → "Preparación de la solicitud"
+  - `EMBED_OFFER` → "Preparación de la oferta"
+  - `JUDGE_BATCH` → "Conciliación de ítems"
 - `Modelo`: tal como viene (`gpt-4o-mini`, etc).
 - `Tokens (in / out)`: `47.234 / 18.901` formato es-AR.
 - `Costo`: `US$ 0,0220`.

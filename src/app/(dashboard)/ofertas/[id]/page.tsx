@@ -2,7 +2,14 @@ import { ArrowLeft, Package } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/infra/db/prisma';
+import { loadReconciliationViewByOffer } from '@/core/output/load-view';
+import { buildMarkdownSummary } from '@/core/output/markdown-builder';
 import { OfferDetail } from './OfferDetail';
+import { OfferTabs, type OfferTabKey } from './tabs/OfferTabs';
+import { OfferItemsTab } from './tabs/OfferItemsTab';
+import { ConciliacionTab } from './tabs/ConciliacionTab';
+import { ResumenTab } from './tabs/ResumenTab';
+import { TrazabilidadTab } from './tabs/TrazabilidadTab';
 import type { OfferView } from './types';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +70,7 @@ async function loadOffer(id: number): Promise<OfferView | null> {
             id: l.id,
             relation: l.relation,
             confidence: l.confidence.toString(),
+            lowConfidence: l.lowConfidence,
             embeddingSimilarity: l.embeddingSimilarity?.toString() ?? null,
             quantityRequested: l.quantityRequested?.toString() ?? null,
             quantityOffered: l.quantityOffered?.toString() ?? null,
@@ -94,6 +102,22 @@ function extractFlags(flags: unknown): string[] {
   return Array.isArray(f.flags) ? (f.flags as string[]) : [];
 }
 
+async function loadSummary(offerId: number, reconciliationId: number): Promise<string | null> {
+  const rec = await prisma.reconciliation.findUnique({
+    where: { id: reconciliationId },
+    select: { summary: true },
+  });
+  if (rec?.summary) return rec.summary;
+  const view = await loadReconciliationViewByOffer(offerId);
+  if (!view) return null;
+  const md = buildMarkdownSummary(view);
+  await prisma.reconciliation.update({
+    where: { id: reconciliationId },
+    data: { summary: md },
+  });
+  return md;
+}
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -106,6 +130,26 @@ export default async function OfertaDetailPage({ params }: PageProps) {
   const offer = await loadOffer(numericId);
   if (!offer) notFound();
 
+  const summary = offer.reconciliation
+    ? await loadSummary(offer.id, offer.reconciliation.id)
+    : null;
+
+  const panels: Record<OfferTabKey, React.ReactNode> = {
+    oferta: <OfferItemsTab items={offer.items} status={offer.status} />,
+    conciliacion: <ConciliacionTab reconciliation={offer.reconciliation} />,
+    resumen:
+      offer.reconciliation && summary ? (
+        <ResumenTab
+          offerId={offer.id}
+          reconciliationId={offer.reconciliation.id}
+          summary={summary}
+        />
+      ) : (
+        <EmptyPanel message="El resumen estará disponible cuando la conciliación termine." />
+      ),
+    trazabilidad: <TrazabilidadTab offerId={offer.id} />,
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -116,9 +160,11 @@ export default async function OfertaDetailPage({ params }: PageProps) {
           <ArrowLeft className="h-4 w-4" />
           Ofertas
         </Link>
-        <div className="flex items-end gap-2.5">
-          <Package className="h-8 w-8 shrink-0 text-[#2f458a]" />
-          <h1 className="text-[28px] leading-tight font-bold text-[#2f458a]">{offer.sourceFile}</h1>
+        <div className="flex items-center gap-2.5">
+          <Package className="h-7 w-7 shrink-0 text-[#2f458a] md:h-8 md:w-8" />
+          <h1 className="text-2xl leading-tight font-bold break-all text-[#2f458a] md:text-[28px]">
+            {offer.sourceFile}
+          </h1>
         </div>
         <p className="text-sm text-[#65758b]">
           Solicitud{' '}
@@ -132,7 +178,17 @@ export default async function OfertaDetailPage({ params }: PageProps) {
         </p>
       </div>
 
-      <OfferDetail offer={offer} />
+      <OfferDetail offer={offer}>
+        <OfferTabs panels={panels} />
+      </OfferDetail>
+    </div>
+  );
+}
+
+function EmptyPanel({ message }: { message: string }) {
+  return (
+    <div className="rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-6">
+      <p className="text-sm text-[#6a7282]">{message}</p>
     </div>
   );
 }

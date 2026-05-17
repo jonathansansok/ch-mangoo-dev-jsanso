@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `Offer` ADD COLUMN `extractChunksDone` INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN `extractChunksTotal` INTEGER NOT NULL DEFAULT 0;

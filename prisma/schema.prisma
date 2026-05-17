@@ -51,8 +51,10 @@ model Offer {
   sourceFileHash String          @unique @db.VarChar(64)
   sourceFileMime String          @db.VarChar(128)
   observations   String?         @db.Text
-  status         OfferStatus     @default(PENDING)
-  failureReason  String?         @db.VarChar(500)
+  status              OfferStatus     @default(PENDING)
+  failureReason       String?         @db.VarChar(500)
+  extractChunksTotal  Int             @default(0)
+  extractChunksDone   Int             @default(0)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   request        PurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
@@ -94,6 +96,8 @@ model Reconciliation {
   itemsExtra            Int                  @default(0)
   itemsPartial          Int                  @default(0)
   itemsLowConfidence    Int                  @default(0)
+  batchesTotal          Int                  @default(0)
+  batchesDone           Int                  @default(0)
   totalPromptTokens     Int                  @default(0)
   totalCompletionTokens Int                  @default(0)
   totalCostUsd          Decimal              @default(0) @db.Decimal(10, 6)
@@ -110,7 +114,6 @@ enum LineRelation {
   PARTIAL_QUANTITY
   MISSING_FROM_OFFER
   EXTRA
-  LOW_CONFIDENCE
 }
 
 model ReconciliationLine {
@@ -120,6 +123,7 @@ model ReconciliationLine {
   requestItemId       Int?
   relation            LineRelation
   confidence          Decimal              @db.Decimal(4, 3)
+  lowConfidence       Boolean              @default(false)
   embeddingSimilarity Decimal?             @db.Decimal(4, 3)
   quantityRequested   Decimal?             @db.Decimal(14, 3)
   quantityOffered     Decimal?             @db.Decimal(14, 3)

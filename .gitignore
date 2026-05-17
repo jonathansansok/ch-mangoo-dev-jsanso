@@ -62,6 +62,9 @@ tests/excel*
 Thumbs.db
 desktop.ini
 
+# Office lockfiles
+~$*
+
 # Logs
 *.log
 logs/
@@ -72,3 +75,6 @@ logs/
 # Docker volumes locales
 docker/data/
 .docker-data/
+
+# Headless process-offer outputs
+/output/

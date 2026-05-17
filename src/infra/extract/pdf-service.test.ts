@@ -21,6 +21,9 @@ vi.mock('@/infra/db/prisma', () => ({
       findUnique: vi.fn(),
       upsert: vi.fn(),
     },
+    offer: {
+      update: vi.fn().mockResolvedValue({}),
+    },
   },
 }));
 

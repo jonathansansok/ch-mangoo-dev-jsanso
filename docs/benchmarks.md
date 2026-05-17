@@ -89,14 +89,14 @@ Misma corrida del PDF complex con dos modelos distintos:
 
 ## Knobs relevantes (env vars)
 
-| Var                           | Valor | Efecto                                                              |
-| ----------------------------- | ----- | ------------------------------------------------------------------- |
-| `SHORTLIST_K`                 | 10    | Top-K candidatos por offer item para forward judge                  |
-| `REVERSE_PASS_K`              | 8     | Top-K extras candidatos para cada unassigned request                |
-| `REVERSE_PASS_MIN_SIMILARITY` | 0.55  | Cosine mínimo para incluir extra en shortlist reverse               |
-| `REVERSE_PASS_MIN_CONFIDENCE` | 0.7   | Confidence judge mínima para aceptar recovery                       |
-| `MIN_SIMILARITY`              | 0.55  | Verificador post-judge para downgrade a low_confidence              |
-| `TRUST_JUDGE_CONFIDENCE`      | 0.7   | Si judge confianza ≥ esto, no se hace downgrade por similarity baja |
-| `JUDGE_BATCH_SIZE`            | 10    | Items por batch al judge                                            |
-| `CHUNK_CHAR_BUDGET`           | 12000 | Chars máx por chunk de PDF (constante de código)                    |
-| `EXTRACT_MAX_TOKENS`          | 16000 | Cap output LLM por chunk (constante de código)                      |
+| Var                           | Valor | Efecto                                                                     |
+| ----------------------------- | ----- | -------------------------------------------------------------------------- |
+| `SHORTLIST_K`                 | 10    | Top-K candidatos por offer item para forward judge                         |
+| `REVERSE_PASS_K`              | 8     | Top-K extras candidatos para cada unassigned request                       |
+| `REVERSE_PASS_MIN_SIMILARITY` | 0.55  | Cosine mínimo para incluir extra en shortlist reverse                      |
+| `REVERSE_PASS_MIN_CONFIDENCE` | 0.7   | Confidence judge mínima para aceptar recovery                              |
+| `MIN_SIMILARITY`              | 0.55  | Verificador post-judge: por debajo marca la línea con `lowConfidence`      |
+| `TRUST_JUDGE_CONFIDENCE`      | 0.7   | Si judge confianza ≥ esto, no se marca `lowConfidence` por similarity baja |
+| `JUDGE_BATCH_SIZE`            | 10    | Items por batch al judge                                                   |
+| `CHUNK_CHAR_BUDGET`           | 12000 | Chars máx por chunk de PDF (constante de código)                           |
+| `EXTRACT_MAX_TOKENS`          | 16000 | Cap output LLM por chunk (constante de código)                             |

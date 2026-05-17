@@ -1,6 +1,7 @@
 import 'server-only';
 import pLimit from 'p-limit';
 import { callChat } from '@/infra/ai/call-chat';
+import { prisma } from '@/infra/db/prisma';
 import { sha256 } from '@/lib/hash';
 import { logger } from '@/lib/logger';
 import { env } from '@/env';
@@ -110,6 +111,13 @@ export async function extractPdf(args: ExtractPdfArgs): Promise<ExtractedOfferWi
     chunks.length === 1 ? '[extract] single-call mode' : '[extract] chunked mode',
   );
 
+  if (args.offerId !== undefined) {
+    await prisma.offer.update({
+      where: { id: args.offerId },
+      data: { extractChunksTotal: chunks.length },
+    });
+  }
+
   const limit = pLimit(CHUNK_CONCURRENCY);
   const chunkResults = await Promise.all(
     chunks.map((chunk, idx) =>
@@ -176,9 +184,11 @@ export async function extractPdf(args: ExtractPdfArgs): Promise<ExtractedOfferWi
               'schema_validation_failed',
             );
           }
+          await bumpExtractDone(args.offerId);
           return result;
         } catch (err) {
           chunkLog.error({ err: (err as Error).message }, '[extract] chunk LLM/schema failed');
+          await bumpExtractDone(args.offerId);
           throw new PdfExtractError(
             `Validación de schema falló (chunk ${idx + 1}): ${(err as Error).message}`,
             'schema_validation_failed',
@@ -221,6 +231,21 @@ interface PageChunk {
   text: string;
   firstPage: number;
   lastPage: number;
+}
+
+async function bumpExtractDone(offerId: number | undefined): Promise<void> {
+  if (offerId === undefined) return;
+  try {
+    await prisma.offer.update({
+      where: { id: offerId },
+      data: { extractChunksDone: { increment: 1 } },
+    });
+  } catch (err) {
+    logger.warn(
+      { offerId, err: (err as Error).message },
+      '[extract] failed to bump extractChunksDone',
+    );
+  }
 }
 
 function chunkPagesByCharBudget(pageTexts: ReadonlyArray<string>, budget: number): PageChunk[] {

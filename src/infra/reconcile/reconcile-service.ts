@@ -65,7 +65,7 @@ export async function reconcileOffer(offerId: number): Promise<void> {
   const reconciliation = await prisma.reconciliation.upsert({
     where: { offerId },
     create: { offerId, requestId: offer.requestId },
-    update: { completedAt: null, summary: null },
+    update: { completedAt: null, summary: null, batchesTotal: 0, batchesDone: 0 },
   });
 
   await prisma.reconciliationLine.deleteMany({ where: { reconciliationId: reconciliation.id } });
@@ -130,6 +130,11 @@ export async function reconcileOffer(offerId: number): Promise<void> {
   const batches = chunk(offer.items, env.JUDGE_BATCH_SIZE);
   log.info({ batches: batches.length, batchSize: env.JUDGE_BATCH_SIZE }, '[reconcile] judging');
 
+  await prisma.reconciliation.update({
+    where: { id: reconciliation.id },
+    data: { batchesTotal: batches.length },
+  });
+
   const limit = pLimit(JUDGE_CONCURRENCY);
   const batchResults = await Promise.all(
     batches.map((batch, idx) =>
@@ -150,7 +155,7 @@ export async function reconcileOffer(offerId: number): Promise<void> {
     match: rawDecisions.filter((d) => d.relation === 'match').length,
     partial: rawDecisions.filter((d) => d.relation === 'partial_quantity').length,
     extra: rawDecisions.filter((d) => d.relation === 'extra').length,
-    lowConfidence: rawDecisions.filter((d) => d.relation === 'low_confidence').length,
+    lowConfidence: rawDecisions.filter((d) => d.lowConfidence).length,
   };
   log.info(forwardBreakdown, '[reconcile] forward judge raw decisions');
 
@@ -286,6 +291,7 @@ export async function reconcileOffer(offerId: number): Promise<void> {
       requestItemId: d.requestItemId,
       relation: mapRelation(d.relation),
       confidence: d.confidence,
+      lowConfidence: d.lowConfidence,
       embeddingSimilarity: similarity,
       quantityRequested: requestItem?.quantity ?? null,
       quantityOffered: offerItem.quantity ?? null,
@@ -299,11 +305,14 @@ export async function reconcileOffer(offerId: number): Promise<void> {
     prisma.reconciliation.update({
       where: { id: reconciliation.id },
       data: {
-        itemsCovered: countBy(resolved, (r) => r.relation === 'match'),
+        itemsCovered: countBy(resolved, (r) => r.relation === 'match' && !r.lowConfidence),
         itemsMissing: missingLines.length,
-        itemsExtra: countBy(resolved, (r) => r.relation === 'extra'),
-        itemsPartial: countBy(resolved, (r) => r.relation === 'partial_quantity'),
-        itemsLowConfidence: countBy(resolved, (r) => r.relation === 'low_confidence'),
+        itemsExtra: countBy(resolved, (r) => r.relation === 'extra' && !r.lowConfidence),
+        itemsPartial: countBy(
+          resolved,
+          (r) => r.relation === 'partial_quantity' && !r.lowConfidence,
+        ),
+        itemsLowConfidence: countBy(resolved, (r) => r.lowConfidence),
         totalPromptTokens: totals.promptTokens,
         totalCompletionTokens: totals.completionTokens,
         totalCostUsd: totals.costUsd,
@@ -314,10 +323,10 @@ export async function reconcileOffer(offerId: number): Promise<void> {
   ]);
 
   const summary = {
-    match: countBy(resolved, (r) => r.relation === 'match'),
-    partial: countBy(resolved, (r) => r.relation === 'partial_quantity'),
-    extra: countBy(resolved, (r) => r.relation === 'extra'),
-    lowConfidence: countBy(resolved, (r) => r.relation === 'low_confidence'),
+    match: countBy(resolved, (r) => r.relation === 'match' && !r.lowConfidence),
+    partial: countBy(resolved, (r) => r.relation === 'partial_quantity' && !r.lowConfidence),
+    extra: countBy(resolved, (r) => r.relation === 'extra' && !r.lowConfidence),
+    lowConfidence: countBy(resolved, (r) => r.lowConfidence),
     missing: missingLines.length,
     requestItems: offer.request.items.length,
   };
@@ -414,6 +423,8 @@ async function judgeBatch(
       .map((d) => toResolvable(d, refToOfferId, refToRequestId, shortlists, requestById))
       .filter((d): d is ResolvableDecision => d !== null);
 
+    await bumpBatchesDone(offerId);
+
     return {
       decisions,
       promptTokens: result.promptTokens,
@@ -425,18 +436,31 @@ async function judgeBatch(
       { offerId, batchIdx, err: (err as Error).message },
       '[reconcile] batch failed, low_confidence',
     );
+    await bumpBatchesDone(offerId);
     return {
       decisions: batch.map((item) => ({
         offerItemId: item.id,
         requestItemId: null,
-        relation: 'low_confidence' as const,
+        relation: 'extra' as const,
         confidence: 0,
+        lowConfidence: true,
         rationale: 'Model output invalid',
       })),
       promptTokens: 0,
       completionTokens: 0,
       costUsd: 0,
     };
+  }
+}
+
+async function bumpBatchesDone(offerId: number): Promise<void> {
+  try {
+    await prisma.reconciliation.update({
+      where: { offerId },
+      data: { batchesDone: { increment: 1 } },
+    });
+  } catch (err) {
+    logger.warn({ offerId, err: (err as Error).message }, '[reconcile] failed to bump batchesDone');
   }
 }
 
@@ -455,7 +479,8 @@ function toResolvable(
     requestItemId = refToRequestId.get(decision.requestItemRef) ?? null;
   }
 
-  let relation: ResolvableDecision['relation'] = decision.relation;
+  const relation: ResolvableDecision['relation'] = decision.relation;
+  let lowConfidence = false;
 
   if ((relation === 'match' || relation === 'partial_quantity') && requestItemId !== null) {
     const candidate = shortlists.get(offerItemId)?.find((c) => c.id === requestItemId);
@@ -474,11 +499,11 @@ function toResolvable(
         qtyRatioMax: env.QTY_RATIO_MAX,
       },
     );
-    // Si el LLM confía fuerte, no downgradeamos por similarity baja — el judge vio
-    // el contexto completo y decidió. El flag queda visible en `flags` para revisión.
+    // Si el LLM confía fuerte, no marcamos baja confianza — el judge vio el contexto
+    // completo y decidió. Si no, conservamos la relación original con el flag activo.
     const trustsJudge = decision.confidence >= env.TRUST_JUDGE_CONFIDENCE;
     if (verifier.shouldDowngradeToLowConfidence && !trustsJudge) {
-      relation = 'low_confidence';
+      lowConfidence = true;
     }
   }
 
@@ -487,6 +512,7 @@ function toResolvable(
     requestItemId,
     relation,
     confidence: decision.confidence,
+    lowConfidence,
     rationale: decision.rationale_short,
   };
 }
@@ -499,8 +525,6 @@ function mapRelation(rel: ResolvableDecision['relation']): LineRelation {
       return 'PARTIAL_QUANTITY';
     case 'extra':
       return 'EXTRA';
-    case 'low_confidence':
-      return 'LOW_CONFIDENCE';
   }
 }
 

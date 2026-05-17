@@ -2,6 +2,7 @@ import 'server-only';
 import { extractPdf, PdfExtractError } from '@/infra/extract/pdf-service';
 import { extractXlsx, XlsxExtractError } from '@/infra/extract/xlsx-service';
 import { reconcileOffer, ReconcileError } from '@/infra/reconcile/reconcile-service';
+import { prisma } from '@/infra/db/prisma';
 import { logger } from '@/lib/logger';
 import type { ExtractedOfferWithMeta } from '@/core/extract/schema';
 import { persistExtractedOffer } from './persist-extracted';
@@ -59,6 +60,10 @@ export async function processOfferPipeline(args: PipelineArgs): Promise<void> {
     }
 
     log.info({ kind }, '[pipeline] → EXTRACTING');
+    await prisma.offer.update({
+      where: { id: args.offerId },
+      data: { extractChunksTotal: 0, extractChunksDone: 0 },
+    });
     await setOfferStatus(args.offerId, 'EXTRACTING');
 
     const extractStart = Date.now();

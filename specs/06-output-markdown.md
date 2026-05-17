@@ -140,9 +140,10 @@ Ordenadas por `lineNumber` del offer item para `match`/`partial_quantity`. Por `
 
 `relationLabel`:
 
-- `match` → `✓ Coincide`
-- `partial_quantity` → `~ Cant. parcial`
-- `low_confidence` → `? Baja confianza`
+- `match` → `Coincide`
+- `partial_quantity` → `Cant. parcial`
+
+Si la línea tiene `lowConfidence=true`, se appendea ` · Baja confianza` al label de la relación. La baja confianza es un flag ortogonal, no una relación adicional.
 
 Sin emojis decorativos. El `✓ ~ ?` son señales tipográficas mínimas y se ven bien en Markdown crudo. Si la regla "sin emojis" de CLAUDE.md choca con esto, queda sin ellos: `Coincide`, `Cant. parcial`, `Baja confianza`. Decisión final: **sin íconos tipográficos, solo texto**. Coherente con regla autor.
 

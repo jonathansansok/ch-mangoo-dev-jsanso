@@ -51,12 +51,12 @@ Contexto importante: el equipo planteó en la entrevista técnica que su problem
 2. Outputs referenciales, no narrativos. Reconciliación devuelve `{ request_item_id, relation, confidence, rationale_short }`. Sin repetir descripciones ni precios.
 3. Una llamada, una responsabilidad. Prompts separados para header, items y batch de reconciliación. Sin mega-prompt.
 4. Batches chicos y autocontenidos. Lotes de ≤10 offer items con su shortlist adentro. Sin estado entre llamadas.
-5. Schema-first con Zod. Si el LLM rompe el schema, reintento con feedback (máx 2), después fallback `low_confidence` con raw persistido.
+5. Schema-first con Zod. Si el LLM rompe el schema, reintento con feedback (máx 2), después fallback: línea con `relation=extra, lowConfidence=true` y raw persistido.
 6. Grounding por embeddings. Shortlist con coseno antes del judge. El modelo elige entre candidatos pre-filtrados, no "recuerda" la solicitud entera.
 7. Streaming es UX, no fix de contexto. Sirve para feedback visual, no soluciona context loss. La solución real son las reglas 1-6.
 8. Cache por hash. `sha256(file)` como key. Mismo archivo no re-llama al LLM.
 9. DecisionLog por llamada. Persistir model, tokens, costo, prompt, raw, candidatos, decisión, rationale, duración.
-10. Verificadores deterministas post-LLM. Similaridad mínima ≥ 0.65, qty dentro de rango razonable, unidades compatibles tras normalización. Si fallan, downgrade a `low_confidence`.
+10. Verificadores deterministas post-LLM. Similaridad mínima ≥ 0.65, qty dentro de rango razonable, unidades compatibles tras normalización. Si fallan y el judge no tiene alta confianza, la línea se marca con `lowConfidence=true` pero conserva su `relation` original — la baja confianza es un flag, no una relación (la consigna del challenge define 4 relaciones).
 
 ## Volumen
 

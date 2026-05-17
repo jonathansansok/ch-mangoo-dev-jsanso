@@ -15,6 +15,7 @@ export interface ReconciliationLineView {
   id: number;
   relation: LineRelation;
   confidence: string;
+  lowConfidence: boolean;
   embeddingSimilarity: string | null;
   quantityRequested: string | null;
   quantityOffered: string | null;

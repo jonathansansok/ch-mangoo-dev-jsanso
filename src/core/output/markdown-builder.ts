@@ -32,9 +32,12 @@ function relationLabel(relation: ReconciliationViewLine['relation']): string {
       return 'Faltante';
     case 'EXTRA':
       return 'Sobrante';
-    case 'LOW_CONFIDENCE':
-      return 'Baja confianza';
   }
+}
+
+function relationWithFlag(line: ReconciliationViewLine): string {
+  const base = relationLabel(line.relation);
+  return line.lowConfidence ? `${base} · Baja confianza` : base;
 }
 
 function flagSuffix(flags: string[]): string {
@@ -108,7 +111,7 @@ function matchedRow(line: ReconciliationViewLine): string {
     '|',
     formatPrice(offer?.unitPrice ?? null, offer?.currency ?? null),
     '|',
-    relationLabel(line.relation),
+    relationWithFlag(line),
     '|',
     `${escapeCell(line.rationale)}${flagSuffix(line.flags)}`,
     '|',
@@ -117,10 +120,7 @@ function matchedRow(line: ReconciliationViewLine): string {
 
 function matchedSection(view: ReconciliationView): string {
   const lines = view.lines.filter(
-    (l) =>
-      l.relation === 'MATCH' ||
-      l.relation === 'PARTIAL_QUANTITY' ||
-      l.relation === 'LOW_CONFIDENCE',
+    (l) => l.relation === 'MATCH' || l.relation === 'PARTIAL_QUANTITY',
   );
   if (lines.length === 0) {
     return ['## Items conciliados', '', '_Sin items conciliados en esta oferta._'].join('\n');

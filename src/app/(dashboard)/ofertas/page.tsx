@@ -21,15 +21,19 @@ export default async function OfertasPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-end justify-between gap-4">
-        <div className="flex items-end gap-2.5">
-          <Package className="h-8 w-8 shrink-0 text-[#2f458a]" />
-          <h1 className="text-[28px] leading-tight font-bold text-[#2f458a]">Ofertas</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2.5">
+            <Package className="h-7 w-7 shrink-0 text-[#2f458a] md:h-8 md:w-8" />
+            <h1 className="text-2xl leading-tight font-bold text-[#2f458a] md:text-[28px]">
+              Ofertas
+            </h1>
+          </div>
           <p className="text-sm text-[#65758b]">Ofertas cargadas y su estado de procesamiento</p>
         </div>
         <Link
           href="/ofertas/upload"
-          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white"
+          className="inline-flex items-center justify-center gap-2 self-start rounded-lg px-4 py-2 text-sm font-semibold text-white sm:self-auto"
           style={{ backgroundColor: 'var(--company-primary)' }}
         >
           <Upload className="h-4 w-4" />
@@ -37,7 +41,7 @@ export default async function OfertasPage() {
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white">
+      <div className="overflow-x-auto rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white">
         <table className="w-full">
           <thead className="bg-[#edebf2]">
             <tr>

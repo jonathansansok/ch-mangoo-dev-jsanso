@@ -12,10 +12,32 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const offer = await prisma.offer.findUnique({
     where: { id: offerId },
-    select: { id: true, status: true, failureReason: true, updatedAt: true },
+    select: {
+      id: true,
+      status: true,
+      failureReason: true,
+      updatedAt: true,
+      extractChunksDone: true,
+      extractChunksTotal: true,
+      reconciliation: { select: { batchesDone: true, batchesTotal: true } },
+    },
   });
 
   if (!offer) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  return NextResponse.json(offer);
+  const recon = offer.reconciliation;
+  let progress: { done: number; total: number } | null = null;
+  if (offer.status === 'EXTRACTING' && offer.extractChunksTotal > 0) {
+    progress = { done: offer.extractChunksDone, total: offer.extractChunksTotal };
+  } else if (offer.status === 'RECONCILING' && recon && recon.batchesTotal > 0) {
+    progress = { done: recon.batchesDone, total: recon.batchesTotal };
+  }
+
+  return NextResponse.json({
+    id: offer.id,
+    status: offer.status,
+    failureReason: offer.failureReason,
+    updatedAt: offer.updatedAt,
+    progress,
+  });
 }
