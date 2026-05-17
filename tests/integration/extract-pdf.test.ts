@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const hasKey = Boolean(process.env['OPENAI_API_KEY']);
+const key = process.env['OPENAI_API_KEY'] ?? '';
+// CI setea OPENAI_API_KEY=sk-dummy para que callChat no rompa en boot, pero el
+// test integration pega a OpenAI real y queremos saltearlo en ese caso.
+const hasRealKey = key.length > 0 && !key.startsWith('sk-dummy');
 
 vi.mock('server-only', () => ({}));
 
@@ -25,7 +28,7 @@ vi.mock('@/infra/db/prisma', () => ({
   },
 }));
 
-describe.skipIf(!hasKey)('extractPdf integration (case-simple)', () => {
+describe.skipIf(!hasRealKey)('extractPdf integration (case-simple)', () => {
   it('extrae oferta_comercial_oficinas.pdf con ≥ 5 items', async () => {
     const { extractPdf } = await import('@/infra/extract/pdf-service');
     const buffer = readFileSync(
