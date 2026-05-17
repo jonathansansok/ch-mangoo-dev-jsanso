@@ -26,6 +26,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "prisma studio",
+    "process-offer": "tsx scripts/process-offer.ts",
     "prepare": "husky"
   },
   "dependencies": {

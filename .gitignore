@@ -75,3 +75,6 @@ logs/
 # Docker volumes locales
 docker/data/
 .docker-data/
+
+# Headless process-offer outputs
+/output/
