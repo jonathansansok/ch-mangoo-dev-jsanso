@@ -1,7 +1,6 @@
 // Headless: procesa una oferta (PDF/XLSX) end-to-end y escribe los 4 entregables
-// que pide la consigna (oferta procesada, tabla conciliada, resumen Markdown,
-// trazabilidad) a `output/<slug>/`. Útil para evaluadores que no quieran levantar
-// la UI.
+// (oferta procesada, tabla conciliada, resumen Markdown, trazabilidad) a
+// `output/<slug>/`. Útil para correr sin levantar la UI.
 //
 // Uso:
 //   pnpm tsx scripts/process-offer.ts <path> [--request <externalId>]

@@ -8,13 +8,14 @@ import { env } from '@/env';
 import { shortlistFor, type Candidate } from '@/core/reconcile/shortlist';
 import { runVerifiers, type VerifierFlag } from '@/core/reconcile/verifiers';
 import { unitsCompatible } from '@/lib/normalize-text';
-import { JudgeOutput, type JudgeDecision } from '@/core/reconcile/judge-schema';
+import { JudgeOutput } from '@/core/reconcile/judge-schema';
 import {
   buildJudgeUserPrompt,
   JUDGE_SYSTEM_PROMPT,
   type JudgeOfferItemPrompt,
 } from '@/core/reconcile/judge-prompts';
 import { resolveConflicts, type ResolvableDecision } from '@/core/reconcile/conflict-resolution';
+import { resolveDecision, type ResolveRequestItem } from '@/core/reconcile/resolve-decision';
 import { embedOfferItems, embedRequestItems } from './embed-items';
 import {
   applyRecoveries,
@@ -419,8 +420,27 @@ async function judgeBatch(
       '[reconcile] batch ok',
     );
 
+    const resolveReqById = new Map<number, ResolveRequestItem>(
+      [...requestById.entries()].map(([id, it]) => [
+        id,
+        { quantity: Number(it.quantity), unit: it.unit },
+      ]),
+    );
     const decisions = result.data.decisions
-      .map((d) => toResolvable(d, refToOfferId, refToRequestId, shortlists, requestById))
+      .map((d) =>
+        resolveDecision(d, {
+          refToOfferId,
+          refToRequestId,
+          shortlists,
+          requestById: resolveReqById,
+          verifierConfig: {
+            minSimilarity: env.MIN_SIMILARITY,
+            qtyRatioMin: env.QTY_RATIO_MIN,
+            qtyRatioMax: env.QTY_RATIO_MAX,
+          },
+          trustJudgeConfidence: env.TRUST_JUDGE_CONFIDENCE,
+        }),
+      )
       .filter((d): d is ResolvableDecision => d !== null);
 
     await bumpBatchesDone(offerId);
@@ -462,59 +482,6 @@ async function bumpBatchesDone(offerId: number): Promise<void> {
   } catch (err) {
     logger.warn({ offerId, err: (err as Error).message }, '[reconcile] failed to bump batchesDone');
   }
-}
-
-function toResolvable(
-  decision: JudgeDecision,
-  refToOfferId: Map<string, number>,
-  refToRequestId: Map<string, number>,
-  shortlists: Map<number, Candidate[]>,
-  requestById: Map<number, ReqItem>,
-): ResolvableDecision | null {
-  const offerItemId = refToOfferId.get(decision.offerItemRef);
-  if (offerItemId === undefined) return null;
-
-  let requestItemId: number | null = null;
-  if (decision.requestItemRef !== null) {
-    requestItemId = refToRequestId.get(decision.requestItemRef) ?? null;
-  }
-
-  const relation: ResolvableDecision['relation'] = decision.relation;
-  let lowConfidence = false;
-
-  if ((relation === 'match' || relation === 'partial_quantity') && requestItemId !== null) {
-    const candidate = shortlists.get(offerItemId)?.find((c) => c.id === requestItemId);
-    const requestItem = requestById.get(requestItemId);
-    const verifier = runVerifiers(
-      {
-        similarity: candidate?.similarity ?? null,
-        quantityOffered: null,
-        quantityRequested: requestItem ? Number(requestItem.quantity) : null,
-        unitOffered: null,
-        unitRequested: requestItem?.unit ?? null,
-      },
-      {
-        minSimilarity: env.MIN_SIMILARITY,
-        qtyRatioMin: env.QTY_RATIO_MIN,
-        qtyRatioMax: env.QTY_RATIO_MAX,
-      },
-    );
-    // Si el LLM confía fuerte, no marcamos baja confianza — el judge vio el contexto
-    // completo y decidió. Si no, conservamos la relación original con el flag activo.
-    const trustsJudge = decision.confidence >= env.TRUST_JUDGE_CONFIDENCE;
-    if (verifier.shouldDowngradeToLowConfidence && !trustsJudge) {
-      lowConfidence = true;
-    }
-  }
-
-  return {
-    offerItemId,
-    requestItemId,
-    relation,
-    confidence: decision.confidence,
-    lowConfidence,
-    rationale: decision.rationale_short,
-  };
 }
 
 function mapRelation(rel: ResolvableDecision['relation']): LineRelation {
