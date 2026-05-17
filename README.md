@@ -161,12 +161,56 @@ Cada `ReconciliationLine` tiene FK al `DecisionLog` que la produjo. La UI muestr
 ## Testing
 
 ```bash
-pnpm test            # unit + integration
-pnpm test:unit       # solo unit (src/)
-pnpm test:integration
+pnpm test:unit         # 156 unit (src/**/*.test.ts) — sin I/O, <1s
+pnpm test:integration  # gated por OPENAI_API_KEY real
+pnpm test:e2e          # 4 e2e — DB real + MSW (1 más skip si no hay OPENAI_API_KEY real)
 pnpm typecheck
 pnpm lint
 ```
+
+### Pirámide
+
+| Nivel                      | Cant. | Foco                                                                         | Requiere                   |
+| -------------------------- | ----- | ---------------------------------------------------------------------------- | -------------------------- |
+| Unit                       | 156   | core puro (parsers, verifiers, shortlist, resolveDecision, markdown builder) | nada                       |
+| Integration / e2e mockeado | 4     | pipeline entero contra DB real con MSW interceptando OpenAI                  | `DATABASE_URL_TEST`        |
+| E2E real                   | 1     | `numeric-fidelity` contra OpenAI real                                        | `OPENAI_API_KEY` real + DB |
+
+### Tests anti-alucinación (diferencial del diseño)
+
+El pain point detrás del challenge: **el LLM pierde contexto en ofertas largas y devuelve precios incorrectos**. Tres tests específicos prueban que la red de seguridad (rule 1–10 en `CLAUDE.md`) funciona cuando el modelo se rompe.
+
+#### Cómo se corren
+
+```bash
+# 1. Unit anti-alucinación (sin I/O, <1s, corre en CI)
+pnpm test:unit src/core/reconcile/resolve-decision.test.ts
+
+# 2. Integration adversarial (DB real + MSW, ~26s, corre en CI)
+pnpm test:e2e tests/e2e/reconcile-hallucination.e2e.ts
+
+# 3. E2E con OpenAI real (~4–5 min, ~$0.05, manual o nightly)
+#    Pone OPENAI_API_KEY en .env.test (queda fuera de git por .gitignore)
+pnpm test:e2e tests/e2e/numeric-fidelity.e2e.ts
+```
+
+#### Qué cubre cada uno
+
+1. **Unit** — `src/core/reconcile/resolve-decision.test.ts`. Si el LLM inventa un `requestItemRef` que no estaba en la shortlist, la línea se degrada a `extra+lowConfidence`. Si confía con `confidence ≥ 0.7`, override de los verifiers.
+
+2. **Integration** — `tests/e2e/reconcile-hallucination.e2e.ts`. MSW adversarial sobre `case-simple`:
+   - **schema retry**: JSON truncado en primer intento → schema retry resuelve, oferta queda `RECONCILED`.
+   - **HTTP 500 persistente**: batch entero cae a `extra+lowConfidence` sin marcar la oferta como `FAILED`.
+   - **`requestItemRef` alucinado**: línea sigue trazable, ningún `MATCH` huérfano con `requestItemId=null`.
+
+3. **E2E real (killer test)** — `tests/e2e/numeric-fidelity.e2e.ts`. Sube `oferta_mantenimiento_integral.pdf` (case-complex, ~220 items), corre contra OpenAI real, releé el texto crudo del PDF y para cada `OfferItem` verifica que su `unitPrice` y `quantity` aparecen como substring (en variantes `1234`, `1.234,56`, `1,234.56`, etc.) en el fuente. Tolerancia ≤1% por formatting weirdness.
+
+#### Qué garantiza la última corrida real
+
+- **0 precios alucinados** en los >150 `OfferItem` extraídos (tasa de miss ≤1%).
+- **0 `MATCH` huérfanos** con `requestItemId=null` llegando a DB.
+- **Sum check exacto**: `match + partial + missing == 220` (cubrimos toda la solicitud sin doble-conteo).
+- **Costo total** < $0.15 USD para 220 items.
 
 Mocks de OpenAI con MSW. Fixtures de los escenarios en `fixtures/scenarios/`.
 
