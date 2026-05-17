@@ -40,9 +40,7 @@ interface ParsedOfferItem {
   candidates: Array<{ ref: string; description: string }>;
 }
 
-const OFFER_ITEM_RE = /\d+\)\s*\[(O\d+)\]\s*descripci[oó]n:\s*"([^"]+)"/g;
 const CANDIDATE_RE = /\[(O\d+R\d+)\]\s*"([^"]+)"/g;
-const REVERSE_ITEM_RE = /\d+\)\s*\[(R\d+)\]\s*descripci[oó]n:\s*"([^"]+)"/g;
 const REVERSE_CAND_RE = /\[(R\d+E\d+)\]\s*"([^"]+)"/g;
 
 function parseJudgePrompt(prompt: string): {
@@ -95,7 +93,6 @@ function buildJudgeResponse(prompt: string, table: MatchTable): string {
   }> = [];
 
   for (const item of parsed.items) {
-    const offerKey = normKey(item.description);
     const targetReq = lookupRequestMatch(item.description, table);
     const relation = relationForOffer(item.description, table);
 

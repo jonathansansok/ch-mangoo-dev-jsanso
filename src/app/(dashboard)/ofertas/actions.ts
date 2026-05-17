@@ -35,6 +35,24 @@ export async function uploadOffer(formData: FormData): Promise<UploadOfferResult
 
   const existing = await prisma.offer.findUnique({ where: { sourceFileHash: hash } });
   if (existing) {
+    if (existing.status === 'FAILED') {
+      logger.info(
+        { existingOfferId: existing.id },
+        '[action] hash match on FAILED offer, retrying pipeline',
+      );
+      await prisma.offer.update({
+        where: { id: existing.id },
+        data: { status: 'PENDING', failureReason: null },
+      });
+      void processOfferPipeline({
+        offerId: existing.id,
+        buffer,
+        fileName: parsed.file.name,
+        mime: parsed.file.type,
+      });
+      revalidatePath('/ofertas');
+      return { offerId: existing.id };
+    }
     logger.info(
       { existingOfferId: existing.id, status: existing.status },
       '[action] hash match, reusing offer',

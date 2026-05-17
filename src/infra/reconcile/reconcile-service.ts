@@ -65,7 +65,7 @@ export async function reconcileOffer(offerId: number): Promise<void> {
   const reconciliation = await prisma.reconciliation.upsert({
     where: { offerId },
     create: { offerId, requestId: offer.requestId },
-    update: { completedAt: null, summary: null },
+    update: { completedAt: null, summary: null, batchesTotal: 0, batchesDone: 0 },
   });
 
   await prisma.reconciliationLine.deleteMany({ where: { reconciliationId: reconciliation.id } });
@@ -129,6 +129,11 @@ export async function reconcileOffer(offerId: number): Promise<void> {
 
   const batches = chunk(offer.items, env.JUDGE_BATCH_SIZE);
   log.info({ batches: batches.length, batchSize: env.JUDGE_BATCH_SIZE }, '[reconcile] judging');
+
+  await prisma.reconciliation.update({
+    where: { id: reconciliation.id },
+    data: { batchesTotal: batches.length },
+  });
 
   const limit = pLimit(JUDGE_CONCURRENCY);
   const batchResults = await Promise.all(
@@ -414,6 +419,8 @@ async function judgeBatch(
       .map((d) => toResolvable(d, refToOfferId, refToRequestId, shortlists, requestById))
       .filter((d): d is ResolvableDecision => d !== null);
 
+    await bumpBatchesDone(offerId);
+
     return {
       decisions,
       promptTokens: result.promptTokens,
@@ -425,6 +432,7 @@ async function judgeBatch(
       { offerId, batchIdx, err: (err as Error).message },
       '[reconcile] batch failed, low_confidence',
     );
+    await bumpBatchesDone(offerId);
     return {
       decisions: batch.map((item) => ({
         offerItemId: item.id,
@@ -437,6 +445,17 @@ async function judgeBatch(
       completionTokens: 0,
       costUsd: 0,
     };
+  }
+}
+
+async function bumpBatchesDone(offerId: number): Promise<void> {
+  try {
+    await prisma.reconciliation.update({
+      where: { offerId },
+      data: { batchesDone: { increment: 1 } },
+    });
+  } catch (err) {
+    logger.warn({ offerId, err: (err as Error).message }, '[reconcile] failed to bump batchesDone');
   }
 }
 

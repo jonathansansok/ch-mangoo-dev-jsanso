@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { OfferStatus } from '@prisma/client';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { CircularProgress } from '@/components/ui/CircularProgress';
 import { StatCard } from '@/components/cards/StatCard';
-import { formatPrice, formatQty, formatDateLong } from '@/lib/format';
+import { formatDateLong } from '@/lib/format';
 import type { OfferView } from './types';
-import { ReconciliationSection } from './ReconciliationSection';
 
 const TERMINAL: ReadonlyArray<OfferStatus> = ['EXTRACTED', 'RECONCILED', 'FAILED'];
 
@@ -17,9 +17,15 @@ interface StatusResponse {
   status: OfferStatus;
   failureReason: string | null;
   updatedAt: string;
+  progress: { done: number; total: number } | null;
 }
 
-export function OfferDetail({ offer }: { offer: OfferView }) {
+interface Props {
+  offer: OfferView;
+  children: ReactNode;
+}
+
+export function OfferDetail({ offer, children }: Props) {
   const router = useRouter();
   const lastStatusRef = useRef<OfferStatus>(offer.status);
   const { data: live } = useQuery<StatusResponse>({
@@ -38,11 +44,24 @@ export function OfferDetail({ offer }: { offer: OfferView }) {
       status: offer.status,
       failureReason: offer.failureReason,
       updatedAt: offer.updatedAt.toISOString(),
+      progress: null,
     },
   });
 
   const currentStatus = live?.status ?? offer.status;
   const currentReason = live?.failureReason ?? offer.failureReason;
+  const progress = live?.progress ?? null;
+  const inProgress = !TERMINAL.includes(currentStatus);
+  const reconcileDone = progress?.done ?? 0;
+  const reconcileTotal = progress?.total ?? 0;
+  const progressLabel =
+    currentStatus === 'EXTRACTING'
+      ? 'Extrayendo'
+      : currentStatus === 'RECONCILING'
+        ? reconcileTotal > 0 && reconcileDone >= reconcileTotal
+          ? 'Finalizando…'
+          : 'Conciliando'
+        : 'Procesando';
 
   useEffect(() => {
     const prev = lastStatusRef.current;
@@ -57,10 +76,15 @@ export function OfferDetail({ offer }: { offer: OfferView }) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-5">
           <p className="text-xs font-semibold tracking-wide text-[#65758b] uppercase">Estado</p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-3">
             <StatusPill status={currentStatus} />
-            {!TERMINAL.includes(currentStatus) && (
-              <span className="text-xs text-[#65758b]">refrescando…</span>
+            {inProgress && (
+              <CircularProgress
+                done={reconcileDone}
+                total={reconcileTotal}
+                size={48}
+                label={progressLabel}
+              />
             )}
           </div>
           {currentReason && <p className="mt-2 text-xs text-red-700">Motivo: {currentReason}</p>}
@@ -78,69 +102,7 @@ export function OfferDetail({ offer }: { offer: OfferView }) {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white">
-        <div className="flex items-center gap-2 border-b border-[#edebf2] bg-[#edebf2] px-4 py-3">
-          <span className="text-base font-semibold text-[#2f458a]">Items ofertados</span>
-          <span className="text-xs text-[#65758b]">({offer.items.length})</span>
-        </div>
-        {offer.items.length === 0 ? (
-          <div className="px-4 py-10 text-center text-sm text-[#6a7282]">
-            {TERMINAL.includes(currentStatus)
-              ? 'No se extrajeron items de esta oferta.'
-              : 'Aún no hay items extraídos. Esperando procesamiento…'}
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-white">
-              <tr className="border-b border-[#d1d5db]">
-                <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
-                  #
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-[#65758b] uppercase">
-                  Código
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-[#65758b] uppercase">
-                  Descripción
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
-                  Cantidad
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-[#65758b] uppercase">
-                  Unidad
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
-                  Precio
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {offer.items.map((item) => (
-                <tr
-                  key={item.id}
-                  className="border-b border-[#edebf2] last:border-b-0 hover:bg-[#f9fafb]"
-                >
-                  <td className="px-4 py-3 text-right text-sm text-[#2f458a] tabular-nums">
-                    {item.lineNumber}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-[#1f2937]">
-                    {item.supplierCode ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[#1f2937]">{item.description}</td>
-                  <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
-                    {formatQty(item.quantity)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[#6a7282]">{item.unit ?? '—'}</td>
-                  <td className="px-4 py-3 text-right text-sm text-[#1f2937] tabular-nums">
-                    {formatPrice(item.unitPrice, item.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {offer.reconciliation && <ReconciliationSection reconciliation={offer.reconciliation} />}
+      {children}
     </>
   );
 }

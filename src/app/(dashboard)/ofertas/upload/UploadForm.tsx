@@ -37,7 +37,7 @@ export function UploadForm({ requests }: { requests: RequestOption[] }) {
     startTransition(async () => {
       try {
         const { offerId } = await uploadOffer(fd);
-        toast.success('Oferta cargada, procesando…');
+        toast.success('Oferta cargada, procesando…', { duration: 2500 });
         router.push(`/ofertas/${offerId}` as never);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error subiendo oferta';
@@ -54,7 +54,7 @@ export function UploadForm({ requests }: { requests: RequestOption[] }) {
           value={requestId}
           onChange={(e) => setRequestId(e.target.value)}
           disabled={pending || requests.length === 0}
-          className="rounded-lg border border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#1f2937] focus:border-[#2f458a] focus:outline-none"
+          className="select-chevron rounded-lg border border-[#d1d5db] bg-white px-3 py-2 text-sm text-[#1f2937] focus:border-[#2f458a] focus:outline-none"
         >
           {requests.length === 0 && <option value="">No hay solicitudes cargadas</option>}
           {requests.map((r) => (

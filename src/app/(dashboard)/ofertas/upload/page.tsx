@@ -16,15 +16,19 @@ export default async function UploadOfertaPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-end gap-2.5">
-        <Upload className="h-8 w-8 shrink-0 text-[#2f458a]" />
-        <h1 className="text-[28px] leading-tight font-bold text-[#2f458a]">Subir oferta</h1>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2.5">
+          <Upload className="h-7 w-7 shrink-0 text-[#2f458a] md:h-8 md:w-8" />
+          <h1 className="text-2xl leading-tight font-bold text-[#2f458a] md:text-[28px]">
+            Subir oferta
+          </h1>
+        </div>
         <p className="text-sm text-[#65758b]">
           Asociá una oferta PDF o XLSX a una solicitud de compra existente
         </p>
       </div>
 
-      <div className="rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-6">
+      <div className="rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-4 md:p-6">
         <UploadForm requests={requests} />
       </div>
     </div>

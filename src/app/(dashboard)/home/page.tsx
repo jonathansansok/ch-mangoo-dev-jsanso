@@ -29,7 +29,7 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-[28px] leading-tight font-bold text-[#2f458a]">Inicio</h1>
+        <h1 className="text-2xl leading-tight font-bold text-[#2f458a] md:text-[28px]">Inicio</h1>
         <p className="text-sm text-[#65758b]">Vista general del sistema</p>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
