@@ -16,7 +16,7 @@ Lista corta antes de cerrar entrega. Cada ítem debe quedar verificado, no agreg
 - [x] Oferta sin proveedor → builder muestra `(no identificado)`, XLSX intenta fallback con `inferSupplierFromFilename`.
 - [x] Qty ofertada > pedida → verifier flag `excess` + `quantity_anomaly` si fuera de rango.
 - [x] Archivo corrupto o vacío → `PdfTextError`/`XlsxTextError` → pipeline setea `FAILED` con `failureReason`.
-- [x] LLM con schema roto → `callChat` reintenta, `judgeBatch` cae a `low_confidence`.
+- [x] LLM con schema roto → `callChat` reintenta, `judgeBatch` cae a `relation=extra, lowConfidence=true`.
 - [x] Mismo hash → `ExtractionCache` HIT + offer reuse en `uploadOffer`.
 - [~] Qty 0 o nula → no se downgradea a `MISSING` explícito, el judge decide. Aceptable para entrega.
 - [~] Items duplicados → no hay dedupe explícito en `mergeChunks`. Aceptable, raro en práctica.

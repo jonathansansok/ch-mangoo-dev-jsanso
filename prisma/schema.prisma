@@ -114,7 +114,6 @@ enum LineRelation {
   PARTIAL_QUANTITY
   MISSING_FROM_OFFER
   EXTRA
-  LOW_CONFIDENCE
 }
 
 model ReconciliationLine {
@@ -124,6 +123,7 @@ model ReconciliationLine {
   requestItemId       Int?
   relation            LineRelation
   confidence          Decimal              @db.Decimal(4, 3)
+  lowConfidence       Boolean              @default(false)
   embeddingSimilarity Decimal?             @db.Decimal(4, 3)
   quantityRequested   Decimal?             @db.Decimal(14, 3)
   quantityOffered     Decimal?             @db.Decimal(14, 3)

@@ -7,6 +7,7 @@ function make(overrides: Partial<ResolvableDecision>): ResolvableDecision {
     requestItemId: 10,
     relation: 'match',
     confidence: 0.9,
+    lowConfidence: false,
     rationale: 'ok',
     ...overrides,
   };
@@ -36,13 +37,15 @@ describe('resolveConflicts', () => {
     expect(out[0]!.relation).toBe('extra');
   });
 
-  it('low_confidence no compite por ganador', () => {
+  it('items con lowConfidence no compiten por ganador y preservan su relación', () => {
     const out = resolveConflicts([
-      make({ offerItemId: 1, requestItemId: 10, confidence: 0.99, relation: 'low_confidence' }),
-      make({ offerItemId: 2, requestItemId: 10, confidence: 0.7, relation: 'match' }),
+      make({ offerItemId: 1, requestItemId: 10, confidence: 0.99, lowConfidence: true }),
+      make({ offerItemId: 2, requestItemId: 10, confidence: 0.7, lowConfidence: false }),
     ]);
     const byOffer = new Map(out.map((d) => [d.offerItemId, d]));
-    expect(byOffer.get(1)!.relation).toBe('low_confidence');
+    expect(byOffer.get(1)!.relation).toBe('match');
+    expect(byOffer.get(1)!.lowConfidence).toBe(true);
     expect(byOffer.get(2)!.relation).toBe('match');
+    expect(byOffer.get(2)!.lowConfidence).toBe(false);
   });
 });

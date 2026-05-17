@@ -13,7 +13,7 @@ Tomar una `Offer` en estado `EXTRACTED` y producir una `Reconciliation` con `Rec
 
 - `Reconciliation` único asociado a la oferta (1:1).
 - `ReconciliationLine[]` cubriendo:
-  - Cada `OfferItem` → línea con relación `match` / `partial_quantity` / `extra` / `low_confidence`.
+  - Cada `OfferItem` → línea con relación `match` / `partial_quantity` / `extra` y flag `lowConfidence` cuando los verificadores cuestionan al judge.
   - Cada `PurchaseRequestItem` no cubierto → línea con relación `missing_from_offer`.
 - `DecisionLog[]` con todas las llamadas al LLM y al embedder.
 - `Offer.status = RECONCILED` (o `FAILED` si todo fracasa).
@@ -119,7 +119,7 @@ const JudgeOutput = z.object({
 
 **Reintentos**:
 
-- Schema roto → reintento con feedback (máx 2). Si falla, marcar el batch como `LOW_CONFIDENCE` para todos sus items y persistir el raw.
+- Schema roto → reintento con feedback (máx 2). Si falla, marcar el batch como `relation=extra, lowConfidence=true` para todos sus items y persistir el raw.
 - Rate limit / 5xx → `p-retry` con backoff.
 
 ### 5. Verificadores deterministas
@@ -128,7 +128,7 @@ Después del judge, para cada decisión, validar reglas duras antes de persistir
 
 **a. Similaridad mínima**:
 
-- Si `relation = match` o `partial_quantity` y el `similarity` del candidato elegido < `MIN_SIMILARITY` (default 0.65): downgrade a `low_confidence`. Flag: `below_similarity_threshold`.
+- Si `relation = match` o `partial_quantity` y el `similarity` del candidato elegido < `MIN_SIMILARITY` (default 0.65): marca la línea con `lowConfidence=true` (conserva la relación original). Flag: `below_similarity_threshold`.
 
 **b. Rango de cantidad** (solo si `relation = match` o `partial_quantity`):
 
@@ -181,11 +181,11 @@ await prisma.$transaction([
   prisma.reconciliation.update({
     where: { id: reconciliationId },
     data: {
-      itemsCovered: count(['match', 'partial_quantity']),
-      itemsMissing: count(['missing_from_offer']),
-      itemsExtra: count(['extra']),
-      itemsPartial: count(['partial_quantity']),
-      itemsLowConfidence: count(['low_confidence']),
+      itemsCovered: count((r) => r.relation === 'match' && !r.lowConfidence),
+      itemsMissing: count((r) => r.relation === 'missing_from_offer'),
+      itemsExtra: count((r) => r.relation === 'extra' && !r.lowConfidence),
+      itemsPartial: count((r) => r.relation === 'partial_quantity' && !r.lowConfidence),
+      itemsLowConfidence: count((r) => r.lowConfidence),
       totalPromptTokens: sum(promptTokens),
       totalCompletionTokens: sum(completionTokens),
       totalCostUsd: sum(costUsd),
@@ -274,7 +274,7 @@ Costo case-complex (con `gpt-4o-mini` + `text-embedding-3-small`):
 - **Offer sin items**: `Offer.status = FAILED` con razón `no_offer_items`. No correr conciliación.
 - **Request sin items**: error de seed. La oferta queda en `EXTRACTED` con flag `request_has_no_items`, no se concilia.
 - **Embeddings devuelven dimensiones distintas para request vs offer**: imposible si se usa el mismo modelo, pero defensive: validar dimensión antes de coseno.
-- **Schema del judge roto definitivamente**: persistir los offer items afectados como `low_confidence` con `rationale = "model output invalid"`, mantener el resto.
+- **Schema del judge roto definitivamente**: persistir los offer items afectados como `relation=extra, lowConfidence=true` con `rationale = "model output invalid"`, mantener el resto.
 - **Rate limit prolongado**: `p-retry` agota reintentos → FAILED parcial. Documentar batches no procesados.
 - **OfferItem con description vacía**: skip (no se concilia). Loguear warning.
 - **PurchaseRequestItem con description vacía**: error de seed, validar antes.
@@ -292,7 +292,7 @@ Cada `ReconciliationLine` apunta a un `DecisionLog` (vía `reconciliationLineId`
 - Decisión final y rationale.
 - Tokens y costo.
 
-Para verificadores deterministas que cambien la decisión (downgrade a `low_confidence`), se loguea un `DecisionLog` adicional con `kind: 'VERIFIER'` (extensión del enum). Por ahora se usa el campo `candidatesConsidered` con sub-key `verifier_flags`.
+Para verificadores deterministas que marquen `lowConfidence=true` sobre la decisión del judge, se loguea un `DecisionLog` adicional con `kind: 'VERIFIER'` (extensión del enum). Por ahora se usa el campo `candidatesConsidered` con sub-key `verifier_flags`.
 
 Decisión: extender el enum `DecisionKind` en un schema bump posterior (`VERIFIER`, `MAP_COLUMNS`). Por ahora se reusa `JUDGE_BATCH` y se distingue por `candidatesConsidered.subKind`. Evitar churn de DB en este momento.
 
@@ -304,7 +304,7 @@ Decisión: extender el enum `DecisionKind` en un schema bump posterior (`VERIFIE
 2. **case-complex end-to-end**: 220 items, validar que ≥ 95% son `match` o `partial_quantity`.
 3. **Shortlist correctness**: dados embeddings sintéticos, asegurar top-5 está bien calculado.
 4. **Batch judge schema fail**: mock devuelve JSON inválido 3 veces → afecta a 1 batch, el resto sigue.
-5. **Verifier downgrade**: similarity = 0.5 con match del LLM → línea queda `low_confidence`.
+5. **Verifier downgrade**: similarity = 0.5 con match del LLM → línea queda `relation=match, lowConfidence=true`.
 6. **Conflict resolution**: dos offer items matchean el mismo request → uno match, otro extra con rationale específico.
 7. **Reverse pass**: request item no cubierto → línea `missing_from_offer` automática.
 8. **Empty offer**: status FAILED.

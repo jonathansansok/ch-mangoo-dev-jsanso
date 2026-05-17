@@ -4,6 +4,7 @@ export interface ReconciliationViewLine {
   id: number;
   relation: LineRelation;
   confidence: number;
+  lowConfidence: boolean;
   embeddingSimilarity: number | null;
   quantityRequested: number | null;
   quantityOffered: number | null;

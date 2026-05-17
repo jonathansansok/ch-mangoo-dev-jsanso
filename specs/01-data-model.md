@@ -99,7 +99,7 @@ Index: `(offerId)` unique, `(requestId)`.
 
 ### ReconciliationLine
 
-Una línea por decisión. Cubre los 4 tipos de relación más `low_confidence`.
+Una línea por decisión. Cubre los 4 tipos de relación que pide la consigna. La baja confianza es un flag ortogonal (`lowConfidence: Boolean`), no una relación adicional — preserva el veredicto del judge cuando los verificadores no lo avalan.
 
 | Campo                 | Tipo                | Notas                                                                                   |
 | --------------------- | ------------------- | --------------------------------------------------------------------------------------- |
@@ -107,8 +107,9 @@ Una línea por decisión. Cubre los 4 tipos de relación más `low_confidence`.
 | `reconciliationId`    | Int                 | FK → Reconciliation, onDelete Cascade                                                   |
 | `offerItemId`         | Int?                | FK → OfferItem. Null si `missing_from_offer`                                            |
 | `requestItemId`       | Int?                | FK → PurchaseRequestItem. Null si `extra`                                               |
-| `relation`            | Enum `LineRelation` | MATCH, PARTIAL_QUANTITY, MISSING_FROM_OFFER, EXTRA, LOW_CONFIDENCE                      |
+| `relation`            | Enum `LineRelation` | MATCH, PARTIAL_QUANTITY, MISSING_FROM_OFFER, EXTRA                                      |
 | `confidence`          | Decimal(4,3)        | rango [0, 1]                                                                            |
+| `lowConfidence`       | Boolean             | true si verificadores cuestionan al judge y judge no confía fuerte                      |
 | `embeddingSimilarity` | Decimal(4,3)?       | coseno del shortlist, [0, 1]                                                            |
 | `quantityRequested`   | Decimal(14,3)?      | snapshot al momento de conciliar                                                        |
 | `quantityOffered`     | Decimal(14,3)?      | snapshot                                                                                |
@@ -175,7 +176,6 @@ enum LineRelation {
   PARTIAL_QUANTITY
   MISSING_FROM_OFFER
   EXTRA
-  LOW_CONFIDENCE
 }
 
 enum DecisionKind {

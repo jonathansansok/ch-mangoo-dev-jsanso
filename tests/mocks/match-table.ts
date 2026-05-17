@@ -1,3 +1,7 @@
+// Test-only oracle: parsea `fixtures/scenarios/*/reconciliation_guide.md` para
+// generar respuestas determinísticas en mocks de OpenAI durante e2e. NUNCA es
+// importado por `src/`. La consigna del challenge pide explícitamente que la app
+// runtime no dependa de este archivo como input — se respeta.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 

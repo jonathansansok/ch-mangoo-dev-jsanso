@@ -318,6 +318,7 @@ export function applyRecoveries(
       requestItemId: rec.requestItemId,
       relation: rec.relation,
       confidence: rec.confidence,
+      lowConfidence: false,
       rationale: rec.rationale,
     };
   });

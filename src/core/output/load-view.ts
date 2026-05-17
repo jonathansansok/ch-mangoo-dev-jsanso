@@ -55,6 +55,7 @@ export async function loadReconciliationView(
     id: l.id,
     relation: l.relation,
     confidence: Number(l.confidence),
+    lowConfidence: l.lowConfidence,
     embeddingSimilarity: l.embeddingSimilarity !== null ? Number(l.embeddingSimilarity) : null,
     quantityRequested: l.quantityRequested !== null ? Number(l.quantityRequested) : null,
     quantityOffered: l.quantityOffered !== null ? Number(l.quantityOffered) : null,

@@ -33,7 +33,8 @@ Inspirado en el dashboard interno de Oceans HR (`C:\dev\oceans-hr`). Mismo lengu
 | `partial_quantity`   | `#fef3c7` | `#92400e` |
 | `missing_from_offer` | `#fee2e2` | `#991b1b` |
 | `extra`              | `#dbeafe` | `#1e40af` |
-| `low_confidence`     | `#e5e7eb` | `#374151` |
+
+Flag adicional `lowConfidence` (no es relación): badge gris `#e5e7eb` / `#374151` ` Baja confianza` que se renderiza al lado del pill de relación.
 
 ### Tipografía
 
@@ -163,8 +164,9 @@ Donde `variants`:
   partial_quantity:    "bg-[#fef3c7] text-[#92400e]",
   missing_from_offer:  "bg-[#fee2e2] text-[#991b1b]",
   extra:               "bg-[#dbeafe] text-[#1e40af]",
-  low_confidence:      "bg-[#e5e7eb] text-[#374151]",
 }
+// Flag adicional, no relación:
+const LOW_CONFIDENCE_BADGE = "bg-[#e5e7eb] text-[#374151]";
 ```
 
 ### Sidebar

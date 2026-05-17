@@ -94,7 +94,7 @@ export function ReconciliationSection({ reconciliation }: { reconciliation: Reco
                 >
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1">
-                      <RelationPill relation={line.relation} />
+                      <RelationPill relation={line.relation} lowConfidence={line.lowConfidence} />
                       {line.flags.length > 0 && (
                         <span className="text-[10px] text-amber-700">{line.flags.join(', ')}</span>
                       )}

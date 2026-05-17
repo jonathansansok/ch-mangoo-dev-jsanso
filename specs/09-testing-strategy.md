@@ -96,7 +96,7 @@ afterAll(async () => {
 - **Reconcile**:
   - case-simple end-to-end con OpenAI mockeado (respuestas deterministas via MSW). Asserts del conteo y de las relaciones.
   - Reverse pass: request items no asignados → `MISSING_FROM_OFFER` automáticos.
-  - Verifier downgrade: similarity 0.5 + match LLM → línea queda `LOW_CONFIDENCE`.
+  - Verifier downgrade: similarity 0.5 + match LLM → línea queda `relation=MATCH, lowConfidence=true`.
   - Idempotency: re-conciliar sin `force=true` no hace nada.
 
 - **Server actions**:

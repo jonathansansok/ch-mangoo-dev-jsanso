@@ -42,6 +42,7 @@ function makeLine(overrides: Partial<ReconciliationViewLine>): ReconciliationVie
     id: 1,
     relation: 'MATCH',
     confidence: 0.95,
+    lowConfidence: false,
     embeddingSimilarity: 0.85,
     quantityRequested: 100,
     quantityOffered: 100,

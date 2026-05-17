@@ -70,6 +70,7 @@ async function loadOffer(id: number): Promise<OfferView | null> {
             id: l.id,
             relation: l.relation,
             confidence: l.confidence.toString(),
+            lowConfidence: l.lowConfidence,
             embeddingSimilarity: l.embeddingSimilarity?.toString() ?? null,
             quantityRequested: l.quantityRequested?.toString() ?? null,
             quantityOffered: l.quantityOffered?.toString() ?? null,
