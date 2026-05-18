@@ -65,16 +65,7 @@ export function CircularProgress({ done, total, size = 56, label }: Props) {
           </text>
         )}
       </svg>
-      {label && (
-        <span className="text-xs text-[#65758b]">
-          {label}
-          {!indeterminate && total > 0 && (
-            <span className="ml-1 text-[#9ca3af]">
-              ({done}/{total})
-            </span>
-          )}
-        </span>
-      )}
+      {label && <span className="text-xs text-[#65758b]">{label}</span>}
     </div>
   );
 }
