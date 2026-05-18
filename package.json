@@ -52,7 +52,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.0",
-    "@commitlint/config-conventional": "^19.6.0",
+    "@commitlint/config-conventional": "^21.0.1",
     "@eslint/eslintrc": "^3.3.5",
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/react": "^16.1.0",
