@@ -1,4 +1,5 @@
-import { FileText, GitCompareArrows, Package, TrendingUp } from 'lucide-react';
+import { FileText, GitCompareArrows, Package, TrendingUp, Upload } from 'lucide-react';
+import Link from 'next/link';
 import { StatCard } from '@/components/cards/StatCard';
 import { prisma } from '@/infra/db/prisma';
 
@@ -54,10 +55,27 @@ export default async function HomePage() {
           icon={<TrendingUp className="h-5 w-5" />}
         />
       </div>
-      <div className="rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-5">
+      <div className="flex flex-col gap-3 rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[#6a7282]">
-          Subí una oferta desde la sección Ofertas para empezar la conciliación.
+          Subí una oferta para empezar la conciliación contra las solicitudes cargadas.
         </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link
+            href="/ofertas/upload"
+            className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white"
+            style={{ backgroundColor: 'var(--company-primary)' }}
+          >
+            <Upload className="h-4 w-4" />
+            Subir oferta
+          </Link>
+          <Link
+            href="/solicitudes"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#d1d5db] bg-white px-4 py-2 text-sm font-semibold text-[#2f458a] hover:bg-[#f9fafb]"
+          >
+            <FileText className="h-4 w-4" />
+            Ver solicitudes
+          </Link>
+        </div>
       </div>
     </div>
   );
