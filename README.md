@@ -5,6 +5,8 @@
 ![Node](https://img.shields.io/badge/node-22%2B-339933?logo=node.js&logoColor=white)
 [![Anti-hallucination](https://img.shields.io/badge/anti--hallucination-3%20tests-8957e5)](#tests-anti-alucinación-diferencial-del-diseño)
 
+**[Demo en vivo](https://innovative-reflection-production-650d.up.railway.app/)** · [Spec](docs/challenge.pdf) · [Benchmarks](docs/benchmarks.md)
+
 Procesa ofertas de proveedor (PDF/XLSX) y las concilia contra solicitudes de compra cargadas en DB. La oferta no comparte IDs con la solicitud ni copia las descripciones, así que la conciliación es semántica.
 
 Challenge técnico de Mangoo Dev. El spec completo está en `docs/challenge.pdf` y los datos de prueba en `fixtures/scenarios/`.
