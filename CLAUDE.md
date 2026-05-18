@@ -4,7 +4,7 @@ Notas internas del proyecto. Decisiones, contexto y convenciones que conviene te
 
 ## Qué es esto
 
-Challenge técnico de Esolbay. Procesar una oferta de proveedor (PDF o XLSX), modelarla, y conciliarla contra solicitudes de compra cargadas en DB. La oferta no comparte IDs con la solicitud ni copia las descripciones, así que la conciliación es semántica.
+Challenge técnico de Mangoo Dev. Procesar una oferta de proveedor (PDF o XLSX), modelarla, y conciliarla contra solicitudes de compra cargadas en DB. La oferta no comparte IDs con la solicitud ni copia las descripciones, así que la conciliación es semántica.
 
 Criterio de evaluación citado en el spec (página 3):
 

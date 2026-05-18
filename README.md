@@ -6,7 +6,7 @@
 
 Procesa ofertas de proveedor (PDF/XLSX) y las concilia contra solicitudes de compra cargadas en DB. La oferta no comparte IDs con la solicitud ni copia las descripciones, así que la conciliación es semántica.
 
-Challenge técnico de Esolbay. El spec completo está en `docs/challenge.pdf` y los datos de prueba en `fixtures/scenarios/`.
+Challenge técnico de Mangoo Dev. El spec completo está en `docs/challenge.pdf` y los datos de prueba en `fixtures/scenarios/`.
 
 ## Resultados
 
@@ -20,6 +20,13 @@ Medido contra el `reconciliation_guide.md` de cada escenario (ver `docs/benchmar
 | case-complex XLSX | 99.1% (218/220) | $0.064  | 68s    |
 
 Los pares no recuperados (`Bandeja↔Cubeta pintura`, `Pinza universal↔combinada`) son ambiguos a propósito: el judge prefiere quedarse en `missing+extra` antes que asumir un match incorrecto. Bajar `REVERSE_PASS_MIN_CONFIDENCE` los recupera pero abre falsos positivos peores (`Llave francesa↔Llave de paso`).
+
+## Calidad
+
+- CI: `lint` + `typecheck` + `test` + `build` en paralelo, cache pnpm + `.next/cache`.
+- 156 unit (<1s, sin I/O) + 4 e2e con DB real + MSW (~26s, $0).
+- Tests anti-alucinación específicos del pain point (T1/T2/T3, ver [Testing ↓](#tests-anti-alucinación-diferencial-del-diseño)).
+- Railway preview por PR, deploy automático en merge a `main`.
 
 ## Stack
 
