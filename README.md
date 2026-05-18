@@ -1,4 +1,4 @@
-# challenge-ok
+# Mangoo Dev. Sansó Challenge
 
 [![CI](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/ci.yml)
 [![Deploy](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/deploy.yml/badge.svg)](https://github.com/jonathansansok/ch-mangoo-dev-jsanso/actions/workflows/deploy.yml)
@@ -178,32 +178,44 @@ pnpm lint
 
 ### Tests anti-alucinación (diferencial del diseño)
 
-El pain point detrás del challenge: **el LLM pierde contexto en ofertas largas y devuelve precios incorrectos**. Tres tests específicos prueban que la red de seguridad (rule 1–10 en `CLAUDE.md`) funciona cuando el modelo se rompe.
+El pain point detrás del challenge: **el LLM pierde contexto en ofertas largas y devuelve precios incorrectos**. Tres tests específicos verifican que la red de seguridad descrita en `CLAUDE.md` aguanta cuando el modelo se rompe.
 
-#### Cómo se corren
+#### T1 — Unit `resolve-decision` (offline)
 
 ```bash
-# 1. Unit anti-alucinación (sin I/O, <1s, corre en CI)
 pnpm test:unit src/core/reconcile/resolve-decision.test.ts
+```
 
-# 2. Integration adversarial (DB real + MSW, ~26s, corre en CI)
+- **Archivo**: `src/core/reconcile/resolve-decision.test.ts`
+- **Tiempo / costo**: <1s, sin I/O, sin red.
+- **Requisitos**: ninguno. Corre en CI por default.
+- **Qué prueba**: si el judge devuelve un `requestItemRef` que no estaba en la shortlist (alucinación pura), la línea se degrada a `relation=extra` + `lowConfidence=true`. Si el judge confía con `confidence ≥ TRUST_JUDGE_CONFIDENCE`, su veredicto sobrescribe a los verificadores; si no, la flag `lowConfidence` se preserva sin cambiar la `relation`.
+
+#### T2 — Integration adversarial `reconcile-hallucination` (DB real + MSW)
+
+```bash
 pnpm test:e2e tests/e2e/reconcile-hallucination.e2e.ts
+```
 
-# 3. E2E con OpenAI real (~4–5 min, ~$0.05, manual o nightly)
-#    Pone OPENAI_API_KEY en .env.test (queda fuera de git por .gitignore)
+- **Archivo**: `tests/e2e/reconcile-hallucination.e2e.ts`
+- **Tiempo / costo**: ~26s, $0. Mocks de OpenAI con MSW; DB MySQL de test (`DATABASE_URL_TEST`).
+- **Requisitos**: `DATABASE_URL_TEST` apuntando a una DB local. Corre en CI.
+- **Qué prueba** (3 escenarios sobre `case-simple`):
+  - **Schema retry**: el primer intento devuelve JSON truncado; el reintento con feedback completa el batch y la oferta termina `RECONCILED`.
+  - **HTTP 500 persistente**: el batch que falla degrada todos sus items a `extra+lowConfidence` con raw persistido, sin marcar la oferta entera como `FAILED`.
+  - **`requestItemRef` alucinado**: la línea queda trazable vía `DecisionLog`; nunca llega un `MATCH` con `requestItemId=null` a DB.
+
+#### T3 — E2E real `numeric-fidelity` (killer test, OpenAI real)
+
+```bash
+# OPENAI_API_KEY real en .env.test (fuera de git)
 pnpm test:e2e tests/e2e/numeric-fidelity.e2e.ts
 ```
 
-#### Qué cubre cada uno
-
-1. **Unit** — `src/core/reconcile/resolve-decision.test.ts`. Si el LLM inventa un `requestItemRef` que no estaba en la shortlist, la línea se degrada a `extra+lowConfidence`. Si confía con `confidence ≥ 0.7`, override de los verifiers.
-
-2. **Integration** — `tests/e2e/reconcile-hallucination.e2e.ts`. MSW adversarial sobre `case-simple`:
-   - **schema retry**: JSON truncado en primer intento → schema retry resuelve, oferta queda `RECONCILED`.
-   - **HTTP 500 persistente**: batch entero cae a `extra+lowConfidence` sin marcar la oferta como `FAILED`.
-   - **`requestItemRef` alucinado**: línea sigue trazable, ningún `MATCH` huérfano con `requestItemId=null`.
-
-3. **E2E real (killer test)** — `tests/e2e/numeric-fidelity.e2e.ts`. Sube `oferta_mantenimiento_integral.pdf` (case-complex, ~220 items), corre contra OpenAI real, releé el texto crudo del PDF y para cada `OfferItem` verifica que su `unitPrice` y `quantity` aparecen como substring (en variantes `1234`, `1.234,56`, `1,234.56`, etc.) en el fuente. Tolerancia ≤1% por formatting weirdness.
+- **Archivo**: `tests/e2e/numeric-fidelity.e2e.ts`
+- **Tiempo / costo**: ~4–5 min, ~$0.05 USD por corrida.
+- **Requisitos**: `OPENAI_API_KEY` real (no `sk-dummy`) en `.env.test` + `DATABASE_URL_TEST`. Skip automático si la key es dummy. Manual o nightly, no corre en CI por default.
+- **Qué prueba**: sube `oferta_mantenimiento_integral.pdf` (case-complex, ~220 items), corre el pipeline entero contra OpenAI real, re-lee el texto crudo del PDF y para cada `OfferItem` verifica que su `unitPrice` y `quantity` aparezcan como substring (en las variantes `1234`, `1.234,56`, `1,234.56`, etc.) en el texto fuente. Tolerancia ≤1% de miss por idiosincrasias de formato.
 
 #### Qué garantiza la última corrida real
 
