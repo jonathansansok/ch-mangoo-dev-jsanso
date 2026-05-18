@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guía interna para trabajar este repo. Si abrís el proyecto por primera vez, leelo antes de tocar nada.
+Notas internas del proyecto. Decisiones, contexto y convenciones que conviene tener a mano.
 
 ## Qué es esto
 
@@ -43,9 +43,9 @@ Cada uno trae `purchase_requests.csv`, `purchase_request_items.csv`, `offers/` y
 - El código de proveedor (`SIP-00110`, `OFN-00110`) no es el `item_id` de la solicitud. No correlacionan.
 - Cantidades pueden diferir y eso es información, no error.
 
-## Reglas duras del workflow AI
+## Diseño del pipeline contra context loss
 
-Contexto importante: el equipo planteó en la entrevista técnica que su problema actual es que **OpenAI pierde contexto en ofertas largas** y devuelve precios incorrectos al cliente. El diseño de este proyecto está armado para evitar eso.
+En la entrevista técnica surgió que el problema actual del equipo es que **OpenAI pierde contexto en ofertas largas** y devuelve precios incorrectos al cliente. El pipeline está pensado para mitigar eso.
 
 1. El LLM no es source-of-truth de números. Precios, qty, totales viven en DB tras la extracción. Outputs posteriores devuelven IDs y rationale corto. La UI y el Markdown hidratan desde DB.
 2. Outputs referenciales, no narrativos. Reconciliación devuelve `{ request_item_id, relation, confidence, rationale_short }`. Sin repetir descripciones ni precios.
@@ -73,21 +73,18 @@ Costo estimado case-complex ~$0.10 USD con `gpt-4o-mini`.
 ## Trabajo en el repo
 
 - Spec, datos y guides están en español. La salida al usuario (Markdown, UI) también va en español. Código e identificadores en inglés.
-- Cuando arranque la implementación, agregar `README.md` con quickstart, decisiones técnicas y modelo de datos. El spec lo exige en la página 2.
-- No inventar comandos en este CLAUDE.md que todavía no existan. Se actualiza después del primer scaffold.
+- El `README.md` cubre quickstart, decisiones técnicas y modelo de datos (lo exige el spec en la página 2).
 
-## Railway deploy — no romper
+## Railway deploy
 
-App live en Railway con auto-deploy en `main`. Stack de infra que NO se toca sin entender consecuencias:
+App live en Railway con auto-deploy desde `main`. Apuntes de la infra actual:
 
-- **`railway.json`**: `startCommand` corre `prisma migrate deploy && pnpm db:seed && pnpm start`. Sin esto la DB queda vacía y `/home` crashea (Prisma P2021).
-- **Builder**: Railway usa Railpack 0.23.0, NO Nixpacks. `nixpacks.toml` es ignorado, no agregarlo de vuelta. Toda customización de start va en `railway.json`.
-- **Plugin MySQL**: expone `MYSQL_URL`, no `DATABASE_URL`. La var `DATABASE_URL` del service app es una referencia: `${{MySQL.MYSQL_URL}}`. Si se rompe la ref, app no levanta.
-- **NODE_ENV**: tiene que ser lowercase (`production`), schema Zod en `src/env.ts` rechaza uppercase.
-- **Servicio Railway** se llama `innovative-reflection` (no `app`). Workflow `.github/workflows/deploy.yml` referencia este nombre. Si se renombra el service, actualizar el workflow.
-- **Healthcheck**: `/api/health` con timeout 120s en `railway.json`. Si se modifica la ruta o se rompe el endpoint, deploys quedan marcados como failed aunque la app esté arriba.
-
-Antes de tocar `railway.json`, `nixpacks.toml`, `.github/workflows/deploy.yml`, vars de Railway, o `src/env.ts`: revisar este bloque y avisar.
+- **`railway.json`**: el `startCommand` corre `prisma migrate deploy && pnpm db:seed && pnpm start`. Sin eso la DB queda vacía y `/home` rompe con `Prisma P2021`.
+- **Builder**: Railway está usando Railpack 0.23.0, no Nixpacks. `nixpacks.toml` queda ignorado; la customización del start vive en `railway.json`.
+- **Plugin MySQL**: expone `MYSQL_URL`, no `DATABASE_URL`. En el service app, `DATABASE_URL` es una referencia: `${{MySQL.MYSQL_URL}}`.
+- **NODE_ENV**: tiene que ir en lowercase (`production`); el schema Zod en `src/env.ts` rechaza uppercase.
+- **Servicio Railway** se llama `innovative-reflection` (no `app`). Lo referencia `.github/workflows/deploy.yml`.
+- **Healthcheck**: `/api/health` con timeout 120s en `railway.json`. Si la ruta cambia o el endpoint rompe, los deploys quedan en failed aunque la app responda.
 
 ## Convención de ramas y commits
 
@@ -113,7 +110,7 @@ fix(seed): handle bom in csv reader
 chore(deps): bump prisma to 5.20
 ```
 
-Sin emojis, sin firmas AI. Subject ≤72 chars.
+Subject ≤72 chars, imperativo, sin emojis.
 
 Flujo: `main` protegida, una rama corta por feature, PR con squash merge, borrar rama post-merge. `commitlint` + `husky` validan formato.
 
@@ -181,7 +178,7 @@ Flujo: `main` protegida, una rama corta por feature, PR con squash merge, borrar
 
 ## Spec-Driven Development
 
-Antes de codear cada módulo, escribir una spec corta en `specs/` y validarla con el usuario. Cada spec describe inputs, outputs, casos de borde y criterios de aceptación. No se empieza código de un módulo hasta que su spec esté revisada.
+Cada módulo arranca con una spec corta en `specs/`: inputs, outputs, casos de borde y criterios de aceptación. La spec se revisa antes de empezar a codear el módulo.
 
 Specs planificadas:
 
