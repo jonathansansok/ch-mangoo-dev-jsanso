@@ -1,4 +1,5 @@
-import { Upload } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
+import Link from 'next/link';
 import { prisma } from '@/infra/db/prisma';
 import { UploadForm } from './UploadForm';
 
@@ -11,12 +12,27 @@ async function loadRequests() {
   });
 }
 
-export default async function UploadOfertaPage() {
-  const requests = await loadRequests();
+export default async function UploadOfertaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ requestId?: string }>;
+}) {
+  const [requests, params] = await Promise.all([loadRequests(), searchParams]);
+  const initialRequestId =
+    params.requestId && requests.some((r) => r.id.toString() === params.requestId)
+      ? params.requestId
+      : undefined;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
+        <Link
+          href="/ofertas"
+          className="mb-2 inline-flex items-center gap-1 text-sm text-[#65758b] hover:text-[#2f458a]"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Ofertas
+        </Link>
         <div className="flex items-center gap-2.5">
           <Upload className="h-7 w-7 shrink-0 text-[#2f458a] md:h-8 md:w-8" />
           <h1 className="text-2xl leading-tight font-bold text-[#2f458a] md:text-[28px]">
@@ -29,7 +45,7 @@ export default async function UploadOfertaPage() {
       </div>
 
       <div className="rounded-tl-none rounded-tr-3xl rounded-br-none rounded-bl-3xl border border-[#d1d5db] bg-white p-4 md:p-6">
-        <UploadForm requests={requests} />
+        <UploadForm requests={requests} {...(initialRequestId ? { initialRequestId } : {})} />
       </div>
     </div>
   );

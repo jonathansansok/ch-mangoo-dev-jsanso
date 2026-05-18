@@ -1,4 +1,4 @@
-import { FileText } from 'lucide-react';
+import { FileText, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { prisma } from '@/infra/db/prisma';
 
@@ -42,12 +42,15 @@ export default async function SolicitudesPage() {
               <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
                 Ofertas
               </th>
+              <th className="px-4 py-3 text-right text-xs font-semibold tracking-wide text-[#65758b] uppercase">
+                Acciones
+              </th>
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-12 text-center text-sm text-[#6a7282]">
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-[#6a7282]">
                   No hay solicitudes cargadas. Correr <code>pnpm db:seed</code> para poblar
                   fixtures.
                 </td>
@@ -72,6 +75,15 @@ export default async function SolicitudesPage() {
                   </td>
                   <td className="px-4 py-3 text-right text-sm text-[#2f458a] tabular-nums">
                     {req._count.offers}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/ofertas/upload?requestId=${req.id}` as never}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#2f458a] px-3 py-1.5 text-xs font-semibold text-[#2f458a] transition-colors hover:bg-[#2f458a] hover:text-white"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      Subir oferta
+                    </Link>
                   </td>
                 </tr>
               ))

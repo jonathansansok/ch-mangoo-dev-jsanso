@@ -13,10 +13,18 @@ interface RequestOption {
   title: string;
 }
 
-export function UploadForm({ requests }: { requests: RequestOption[] }) {
+export function UploadForm({
+  requests,
+  initialRequestId,
+}: {
+  requests: RequestOption[];
+  initialRequestId?: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [requestId, setRequestId] = useState<string>(requests[0]?.id.toString() ?? '');
+  const [requestId, setRequestId] = useState<string>(
+    initialRequestId ?? requests[0]?.id.toString() ?? '',
+  );
   const [file, setFile] = useState<File | null>(null);
 
   function onSubmit(e: React.FormEvent) {
